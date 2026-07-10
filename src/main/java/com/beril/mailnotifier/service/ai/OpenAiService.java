@@ -14,7 +14,7 @@ public class OpenAiService implements AiService {
 
     private static final String MODEL = "gpt-4o-mini";
     private static final int MAX_TOKENS = 500;
-    private static final int SNIPPET_LIMIT = 1000;
+    private static final int CONTENT_LIMIT = 3000;
 
     private static final String SYSTEM_PROMPT =
             "Sen bir mail analiz asistanısın. Verilen mailin içeriğini Türkçe olarak analiz et ve " +
@@ -31,12 +31,12 @@ public class OpenAiService implements AiService {
     }
 
     @Override
-    public AiAnalysisResult analyzeEmail(String from, String subject, String snippet) {
+    public AiAnalysisResult analyzeEmail(String from, String subject, String content) {
         if (!rateLimiter.tryAcquire()) {
             return AiAnalysisResult.empty();
         }
-        String truncatedSnippet = snippet != null && snippet.length() > SNIPPET_LIMIT
-                ? snippet.substring(0, SNIPPET_LIMIT) : snippet;
+        String truncated = content != null && content.length() > CONTENT_LIMIT
+                ? content.substring(0, CONTENT_LIMIT) : content;
 
         String userPrompt = String.format("""
                 Gönderen: %s
@@ -50,7 +50,7 @@ public class OpenAiService implements AiService {
                   "summary": "Kısa özet (1-2 cümle)",
                   "confidence": 0.0-1.0
                 }
-                """, from, subject, truncatedSnippet);
+                """, from, subject, truncated);
 
         try {
             String responseBody = restClient.post()

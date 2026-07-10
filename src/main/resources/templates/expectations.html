@@ -13,7 +13,7 @@
             <h4 class="mb-1 fw-bold">Beklentilerim</h4>
             <p class="text-muted small mb-0">Hangi maillerden bildirim almak istediğinizi tanımlayın.</p>
         </div>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#expectationModal" onclick="openAddModal()">
+        <button class="btn btn-primary" onclick="openAddModal()">
             <i class="bi bi-plus-lg me-1"></i>Yeni Beklenti
         </button>
     </div>
@@ -27,7 +27,7 @@
                 <div class="empty-icon">📝</div>
                 <p class="mb-0 fw-semibold">Henüz beklenti eklemediniz.</p>
                 <p class="text-muted small">İlk beklentinizi ekleyerek başlayın!</p>
-                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#expectationModal" onclick="openAddModal()">
+                <button class="btn btn-primary mt-2" onclick="openAddModal()">
                     <i class="bi bi-plus-lg me-1"></i>Beklenti Ekle
                 </button>
             </div>
@@ -74,25 +74,36 @@
                             th:text="${exp.createdAt != null ? #temporals.format(exp.createdAt, 'dd.MM.yyyy') : '—'}">Tarih</td>
                         <td class="pe-3">
                             <div class="d-flex gap-1">
+                                <!-- Düzenle: veriler data-* attribute ile taşınır (quote escaping sorunu önlenir) -->
                                 <button class="btn btn-sm btn-outline-primary"
-                                        th:onclick="|openEditModal('${exp.id}','${exp.senderIdentifier ?: ''}','${exp.keywords != null ? #strings.arrayJoin(exp.keywords.toArray(), ', ') : ''}','${exp.description ?: ''}')|"
+                                        th:attr="data-exp-id=${exp.id},
+                                                 data-exp-sender=${exp.senderIdentifier ?: ''},
+                                                 data-exp-keywords=${exp.keywords != null ? #strings.arrayJoin(exp.keywords.toArray(), ', ') : ''},
+                                                 data-exp-description=${exp.description ?: ''}"
+                                        onclick="openEditModal(this)"
                                         title="Düzenle">
                                     <i class="bi bi-pencil"></i>
                                 </button>
+                                <!-- Deaktif Et (soft delete – pasif yapar, geri alınabilir) -->
                                 <button th:if="${exp.isActive}"
                                         class="btn btn-sm btn-outline-warning"
-                                        th:onclick="|deactivateExpectation('${exp.id}')|"
+                                        th:attr="data-exp-id=${exp.id}"
+                                        onclick="deactivateExpectation(this.dataset.expId)"
                                         title="Deaktif Et">
                                     <i class="bi bi-pause-circle"></i>
                                 </button>
+                                <!-- Aktifleştir -->
                                 <button th:unless="${exp.isActive}"
                                         class="btn btn-sm btn-outline-success"
-                                        th:onclick="|activateExpectation('${exp.id}')|"
+                                        th:attr="data-exp-id=${exp.id}"
+                                        onclick="activateExpectation(this.dataset.expId)"
                                         title="Aktifleştir">
                                     <i class="bi bi-play-circle"></i>
                                 </button>
+                                <!-- Sil (kalıcı – geri alınamaz) -->
                                 <button class="btn btn-sm btn-outline-danger"
-                                        th:onclick="|deleteExpectation('${exp.id}')|"
+                                        th:attr="data-exp-id=${exp.id}"
+                                        onclick="deleteExpectation(this.dataset.expId)"
                                         title="Sil">
                                     <i class="bi bi-trash3"></i>
                                 </button>
@@ -107,7 +118,7 @@
 </main>
 
 <!-- Beklenti Modal -->
-<div class="modal fade" id="expectationModal" tabindex="-1">
+<div class="modal fade" id="expectationModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -142,9 +153,7 @@
                     <div class="fw-semibold small text-secondary mb-1">AI Önerileri <span class="text-muted fw-normal">(eklemek için tıklayın)</span></div>
                     <div id="suggestBadges" class="d-flex flex-wrap gap-1"></div>
                 </div>
-                <div id="expError" class="alert alert-danger d-none small py-2">
-                    En az bir kriter girilmeli: gönderen bilgisi veya anahtar kelime.
-                </div>
+                <div id="expError" class="alert alert-danger d-none small py-2 mb-0"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
@@ -158,29 +167,124 @@
 <th:block th:replace="~{fragments/scripts :: scripts}"></th:block>
 
 <script>
-    function openAddModal() {
-        document.getElementById('modalTitle').textContent = 'Yeni Beklenti';
+    // Her zaman aynı Bootstrap Modal instance'ını döndürür (yeni instance çakışmasını önler)
+    function getExpModal() {
+        return bootstrap.Modal.getOrCreateInstance(document.getElementById('expectationModal'));
+    }
+
+    function resetForm() {
         document.getElementById('expId').value = '';
         document.getElementById('expSender').value = '';
         document.getElementById('expKeywords').value = '';
         document.getElementById('expDescription').value = '';
-        document.getElementById('expSaveBtn').textContent = 'Kaydet';
         document.getElementById('expError').classList.add('d-none');
+        document.getElementById('expError').textContent = '';
         document.getElementById('suggestResult').classList.add('d-none');
         document.getElementById('suggestBadges').innerHTML = '';
+        document.getElementById('expSaveBtn').disabled = false;
     }
 
-    function openEditModal(id, sender, keywords, description) {
+    function openAddModal() {
+        resetForm();
+        document.getElementById('modalTitle').textContent = 'Yeni Beklenti';
+        document.getElementById('expSaveBtn').textContent = 'Kaydet';
+        getExpModal().show();
+    }
+
+    // btn: tıklanan buton — veriler data-* attribute'larından okunur (single quote sorunu olmaz)
+    function openEditModal(btn) {
+        resetForm();
         document.getElementById('modalTitle').textContent = 'Beklenti Düzenle';
-        document.getElementById('expId').value = id;
-        document.getElementById('expSender').value = sender;
-        document.getElementById('expKeywords').value = keywords;
-        document.getElementById('expDescription').value = description;
+        document.getElementById('expId').value = btn.dataset.expId || '';
+        document.getElementById('expSender').value = btn.dataset.expSender || '';
+        document.getElementById('expKeywords').value = btn.dataset.expKeywords || '';
+        document.getElementById('expDescription').value = btn.dataset.expDescription || '';
         document.getElementById('expSaveBtn').textContent = 'Güncelle';
-        document.getElementById('expError').classList.add('d-none');
-        document.getElementById('suggestResult').classList.add('d-none');
-        document.getElementById('suggestBadges').innerHTML = '';
-        new bootstrap.Modal(document.getElementById('expectationModal')).show();
+        getExpModal().show();
+    }
+
+    function showFormError(msg) {
+        const el = document.getElementById('expError');
+        el.textContent = msg;
+        el.classList.remove('d-none');
+    }
+
+    async function saveExpectation() {
+        const id = document.getElementById('expId').value.trim();
+        const sender = document.getElementById('expSender').value.trim();
+        const keywordsRaw = document.getElementById('expKeywords').value;
+        const keywords = keywordsRaw.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        const description = document.getElementById('expDescription').value.trim() || null;
+
+        if (!sender && keywords.length === 0) {
+            showFormError('En az bir kriter girilmeli: gönderen bilgisi veya anahtar kelime.');
+            return;
+        }
+
+        const saveBtn = document.getElementById('expSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Kaydediliyor...';
+
+        try {
+            const url    = id ? `/api/expectations/${id}` : '/api/expectations';
+            const method = id ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senderIdentifier: sender || null, keywords, description })
+            });
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                showFormError(body?.message || `Hata oluştu (${res.status}). Lütfen tekrar deneyin.`);
+                return;
+            }
+
+            // Modal kapandıktan sonra yenile (animasyon bitimini bekle)
+            document.getElementById('expectationModal').addEventListener('hidden.bs.modal', () => {
+                window.location.reload();
+            }, { once: true });
+            getExpModal().hide();
+
+        } catch (e) {
+            showFormError('Bağlantı hatası. Lütfen tekrar deneyin.');
+        } finally {
+            saveBtn.disabled = false;
+            const isEdit = document.getElementById('expId').value.trim();
+            saveBtn.textContent = isEdit ? 'Güncelle' : 'Kaydet';
+        }
+    }
+
+    async function deactivateExpectation(id) {
+        if (!confirm('Bu beklentiyi deaktif etmek istediğinizden emin misiniz?')) return;
+        try {
+            const res = await fetch(`/api/expectations/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(res.status);
+            window.location.reload();
+        } catch (e) {
+            alert('Deaktif etme işlemi başarısız oldu.');
+        }
+    }
+
+    async function activateExpectation(id) {
+        try {
+            const res = await fetch(`/api/expectations/${id}/activate`, { method: 'POST' });
+            if (!res.ok) throw new Error(res.status);
+            window.location.reload();
+        } catch (e) {
+            alert('Aktifleştirme işlemi başarısız oldu.');
+        }
+    }
+
+    async function deleteExpectation(id) {
+        if (!confirm('Bu beklentiyi kalıcı olarak silmek istediğinizden emin misiniz?\nBu işlem geri alınamaz ve tüm eşleşmeler de silinir.')) return;
+        try {
+            const res = await fetch(`/api/expectations/${id}/permanent`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(res.status);
+            window.location.reload();
+        } catch (e) {
+            alert('Silme işlemi başarısız oldu.');
+        }
     }
 
     async function suggestKeywords() {
@@ -210,7 +314,7 @@
             } else {
                 keywords.forEach(kw => {
                     const badge = document.createElement('span');
-                    badge.className = 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 cursor-pointer';
+                    badge.className = 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25';
                     badge.style.cursor = 'pointer';
                     badge.textContent = kw;
                     badge.title = 'Tıkla: anahtar kelimelere ekle';
@@ -235,43 +339,6 @@
         }
         badge.classList.remove('bg-primary', 'text-primary', 'border-primary');
         badge.classList.add('bg-success', 'text-success', 'border-success');
-    }
-
-
-    async function saveExpectation() {
-        const id = document.getElementById('expId').value;
-        const sender = document.getElementById('expSender').value.trim();
-        const keywordsRaw = document.getElementById('expKeywords').value;
-        const keywords = keywordsRaw.split(',').map(k => k.trim()).filter(k => k.length > 0);
-        const description = document.getElementById('expDescription').value.trim() || null;
-
-        if (!sender && keywords.length === 0) {
-            document.getElementById('expError').classList.remove('d-none');
-            return;
-        }
-
-        const data = { senderIdentifier: sender || null, keywords, description };
-        const url  = id ? `/api/expectations/${id}` : '/api/expectations';
-        const method = id ? 'PUT' : 'POST';
-
-        await apiCall(url, { method, body: JSON.stringify(data) });
-        window.location.reload();
-    }
-
-    async function deactivateExpectation(id) {
-        await apiCall(`/api/expectations/${id}`, { method: 'DELETE' });
-        window.location.reload();
-    }
-
-    async function activateExpectation(id) {
-        await apiCall(`/api/expectations/${id}/activate`, { method: 'POST' });
-        window.location.reload();
-    }
-
-    async function deleteExpectation(id) {
-        if (!confirm('Bu beklentiyi kalıcı olarak silmek istediğinizden emin misiniz?')) return;
-        await apiCall(`/api/expectations/${id}`, { method: 'DELETE' });
-        window.location.reload();
     }
 </script>
 </body>

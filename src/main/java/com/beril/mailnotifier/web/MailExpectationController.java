@@ -72,6 +72,16 @@ public class MailExpectationController {
         return ResponseEntity.ok(ApiResponse.success("Beklenti deaktif edildi.", null));
     }
 
+    @Operation(summary = "Beklentiyi kalıcı olarak sil")
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<ApiResponse<Void>> permanentDelete(
+            @PathVariable UUID id,
+            Authentication auth) {
+        User user = securityHelper.getCurrentUser(auth);
+        expectationService.permanentDeleteExpectation(user, id);
+        return ResponseEntity.ok(ApiResponse.success("Beklenti kalıcı olarak silindi.", null));
+    }
+
     @Operation(summary = "Pasif beklentiyi yeniden aktifleştir")
     @PostMapping("/{id}/activate")
     public ResponseEntity<ApiResponse<ExpectationResponse>> activate(

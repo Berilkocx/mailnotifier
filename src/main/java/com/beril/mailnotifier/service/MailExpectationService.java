@@ -76,6 +76,12 @@ public class MailExpectationService {
         auditLog.info("EXPECTATION_DEACTIVATED userId={} expectationId={}", user.getId(), id);
     }
 
+    public void permanentDeleteExpectation(User user, UUID id) {
+        findOwned(user, id);
+        expectationRepository.deleteById(id);
+        auditLog.info("EXPECTATION_DELETED userId={} expectationId={}", user.getId(), id);
+    }
+
     public ExpectationResponse activateExpectation(User user, UUID id) {
         MailExpectation entity = findOwned(user, id);
         entity.setIsActive(true);

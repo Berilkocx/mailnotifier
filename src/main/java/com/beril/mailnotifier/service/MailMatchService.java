@@ -9,6 +9,7 @@ import com.beril.mailnotifier.dto.MailMatchResponse;
 import com.beril.mailnotifier.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +22,7 @@ public class MailMatchService {
     private final MailMatchRepository matchRepository;
     private final MailExpectationRepository expectationRepository;
 
+    @Transactional(readOnly = true)
     public List<MailMatchResponse> getMatches(User user, ConfidenceLevel confidence) {
         List<MailMatch> matches = confidence != null
                 ? matchRepository.findByExpectation_User_IdAndConfidenceLevelAndDismissedFalseOrderByCreatedAtDesc(
@@ -29,6 +31,7 @@ public class MailMatchService {
         return matches.stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<MailMatchResponse> getFilteredMatches(User user, ConfidenceLevel confidence, UUID expectationId, String period) {
         if (expectationId != null && !expectationRepository.existsByIdAndUser_Id(expectationId, user.getId())) {
             throw new ResourceNotFoundException("Beklenti", "id", expectationId);
@@ -53,17 +56,20 @@ public class MailMatchService {
         return matchRepository.countByExpectation_User_IdAndDismissedFalseAndCreatedAtAfter(user.getId(), today);
     }
 
+    @Transactional(readOnly = true)
     public List<MailMatchResponse> getRecentMatches(User user) {
         return matchRepository.findTop5ByExpectation_User_IdAndDismissedFalseOrderByCreatedAtDesc(user.getId())
                 .stream().map(this::toResponse).toList();
     }
 
+    @Transactional(readOnly = true)
     public MailMatchResponse getMatch(User user, UUID id) {
         MailMatch match = matchRepository.findByIdAndExpectation_User_Id(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Eşleşme", "id", id));
         return toResponse(match);
     }
 
+    @Transactional(readOnly = true)
     public List<MailMatchResponse> getMatchesByExpectation(User user, UUID expectationId) {
         if (!expectationRepository.existsByIdAndUser_Id(expectationId, user.getId())) {
             throw new ResourceNotFoundException("Beklenti", "id", expectationId);
@@ -74,6 +80,7 @@ public class MailMatchService {
                 .toList();
     }
 
+    @Transactional
     public void deleteMatch(User user, UUID id) {
         MailMatch match = matchRepository.findByIdAndExpectation_User_Id(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Eşleşme", "id", id));

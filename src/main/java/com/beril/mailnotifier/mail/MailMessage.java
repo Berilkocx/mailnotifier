@@ -8,5 +8,6 @@ public record MailMessage(
         String fromEmail,
         String subject,
         String snippet,
+        String body,
         Instant receivedAt
 ) {}

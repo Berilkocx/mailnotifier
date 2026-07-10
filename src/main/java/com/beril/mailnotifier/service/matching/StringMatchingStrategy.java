@@ -57,12 +57,13 @@ public class StringMatchingStrategy implements MatchingStrategy {
         List<String> tokens = tokenize(senderIdentifier);
         if (tokens.isEmpty()) return 0.0;
 
+        String effectiveContent = mail.body() != null && !mail.body().isBlank() ? mail.body() : mail.snippet();
         int matched = 0;
         for (String token : tokens) {
             if (fieldContains(mail.from(), token)
                     || fieldContains(mail.fromEmail(), token)
                     || fieldContains(mail.subject(), token)
-                    || fieldContains(mail.snippet(), token)) {
+                    || fieldContains(effectiveContent, token)) {
                 matchedTokens.add(token);
                 matched++;
             }
@@ -71,10 +72,11 @@ public class StringMatchingStrategy implements MatchingStrategy {
     }
 
     private double calculateKeywordScore(MailMessage mail, List<String> keywords, List<String> matched) {
+        String effectiveContent = mail.body() != null && !mail.body().isBlank() ? mail.body() : mail.snippet();
         int matchCount = 0;
         for (String keyword : keywords) {
             String k = keyword.toLowerCase(TURKISH);
-            if (fieldContains(mail.subject(), k) || fieldContains(mail.snippet(), k)) {
+            if (fieldContains(mail.subject(), k) || fieldContains(effectiveContent, k)) {
                 matched.add(keyword);
                 matchCount++;
             }

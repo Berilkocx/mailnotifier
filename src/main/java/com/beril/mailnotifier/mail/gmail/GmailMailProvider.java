@@ -11,6 +11,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
+import com.google.api.services.gmail.model.MessagePart;
 import com.google.api.services.gmail.model.MessagePartHeader;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
@@ -20,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -57,8 +60,7 @@ public class GmailMailProvider implements MailProvider {
                 try {
                     Message msg = gmail.users().messages()
                             .get("me", stub.getId())
-                            .setFormat("METADATA")
-                            .setMetadataHeaders(List.of("From", "Subject", "Date"))
+                            .setFormat("FULL")
                             .execute();
                     messages.add(toMailMessage(msg));
                 } catch (IOException e) {
@@ -81,8 +83,7 @@ public class GmailMailProvider implements MailProvider {
             Gmail gmail = buildGmailService(accessToken);
             Message msg = gmail.users().messages()
                     .get("me", messageId)
-                    .setFormat("METADATA")
-                    .setMetadataHeaders(List.of("From", "Subject", "Date"))
+                    .setFormat("FULL")
                     .execute();
             return toMailMessage(msg);
         } catch (GoogleJsonResponseException e) {
@@ -143,10 +144,51 @@ public class GmailMailProvider implements MailProvider {
                 extractEmail(from),
                 header(msg, "Subject"),
                 msg.getSnippet(),
+                extractBody(msg.getPayload()),
                 msg.getInternalDate() != null
                         ? Instant.ofEpochMilli(msg.getInternalDate())
                         : Instant.now()
         );
+    }
+
+    private String extractBody(MessagePart payload) {
+        if (payload == null) return null;
+
+        // Prefer text/plain; fall back to text/html
+        String plain = findPartBody(payload, "text/plain");
+        if (plain != null && !plain.isBlank()) return plain;
+
+        String html = findPartBody(payload, "text/html");
+        if (html != null && !html.isBlank()) return html;
+
+        return null;
+    }
+
+    private String findPartBody(MessagePart part, String mimeType) {
+        if (part == null) return null;
+
+        if (mimeType.equals(part.getMimeType())) {
+            return decodeBase64(part.getBody());
+        }
+
+        if (part.getParts() != null) {
+            for (MessagePart child : part.getParts()) {
+                String result = findPartBody(child, mimeType);
+                if (result != null && !result.isBlank()) return result;
+            }
+        }
+        return null;
+    }
+
+    private String decodeBase64(com.google.api.services.gmail.model.MessagePartBody body) {
+        if (body == null || body.getData() == null) return null;
+        try {
+            byte[] decoded = Base64.getUrlDecoder().decode(body.getData());
+            return new String(decoded, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            log.warn("Base64 decode başarısız: {}", e.getMessage());
+            return null;
+        }
     }
 
     private String header(Message msg, String name) {

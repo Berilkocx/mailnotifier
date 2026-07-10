@@ -23,7 +23,7 @@ class StringMatchingStrategyTest {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private MailMessage mail(String from, String fromEmail, String subject, String snippet) {
-        return new MailMessage("msg-1", from, fromEmail, subject, snippet, Instant.now());
+        return new MailMessage("msg-1", from, fromEmail, subject, snippet, null, Instant.now());
     }
 
     private MailExpectation expectation(String sender, List<String> keywords) {

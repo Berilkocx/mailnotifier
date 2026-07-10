@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +43,7 @@ public class NotificationService {
         return saved;
     }
 
+    @Transactional(readOnly = true)
     public List<NotificationResponse> getNotifications(User user) {
         return notificationRepository.findByUser_IdOrderBySentAtDesc(user.getId())
                 .stream()
@@ -49,10 +51,12 @@ public class NotificationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public long getUnreadCount(User user) {
         return notificationRepository.countByUser_IdAndIsReadFalse(user.getId());
     }
 
+    @Transactional
     public void markAsRead(User user, UUID notificationId) {
         Notification notification = notificationRepository.findByIdAndUser_Id(notificationId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bildirim", "id", notificationId));
@@ -60,15 +64,18 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    @Transactional
     public void markAllAsRead(User user) {
         notificationRepository.markAllReadByUserId(user.getId());
     }
 
+    @Transactional(readOnly = true)
     public List<NotificationResponse> getRecentNotifications(User user) {
         return notificationRepository.findTop5ByUser_IdOrderBySentAtDesc(user.getId())
                 .stream().map(this::toResponse).toList();
     }
 
+    @Transactional
     public void deleteNotification(User user, UUID notificationId) {
         Notification notification = notificationRepository.findByIdAndUser_Id(notificationId, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bildirim", "id", notificationId));

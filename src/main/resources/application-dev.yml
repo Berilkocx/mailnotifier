@@ -20,9 +20,9 @@ server:
 
 mailnotifier:
   scan:
-    interval: 30000  # dev ortamında 30 sn
+    interval: 5000  # dev ortamında 5 sn
   matching:
-    strategy: string  # nlp yapmak için AI_API_KEY set et ve "nlp" yap
+    strategy: nlp  # nlp yapmak için AI_API_KEY set et ve "nlp" yap
 
 springdoc:
   swagger-ui:

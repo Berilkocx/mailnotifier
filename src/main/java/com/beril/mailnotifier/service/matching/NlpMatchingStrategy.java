@@ -38,7 +38,8 @@ public class NlpMatchingStrategy implements MatchingStrategy {
         // 2. AI analizi
         AiAnalysisResult aiResult = null;
         try {
-            aiResult = aiService.analyzeEmail(mail.from(), mail.subject(), mail.snippet());
+            String aiContent = mail.body() != null && !mail.body().isBlank() ? mail.body() : mail.snippet();
+            aiResult = aiService.analyzeEmail(mail.from(), mail.subject(), aiContent);
         } catch (Exception e) {
             log.warn("AI analizi sırasında hata: {}", e.getMessage());
         }

@@ -33,7 +33,7 @@ class NlpMatchingStrategyTest {
     }
 
     private MailMessage mail(String from, String subject, String snippet) {
-        return new MailMessage("msg-1", from, from, subject, snippet, Instant.now());
+        return new MailMessage("msg-1", from, from, subject, snippet, null, Instant.now());
     }
 
     private MailExpectation expectation(String sender, List<String> keywords, String description) {
