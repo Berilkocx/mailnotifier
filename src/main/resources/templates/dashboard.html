@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="tr">
+<head th:replace="~{fragments/head :: head('Dashboard')}"></head>
+<body class="d-flex flex-column min-vh-100">
+
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+<main class="container-fluid px-4 py-4 flex-grow-1">
+
+    <!-- Özet Kartlar -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card h-100 position-relative">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">📋</div>
+                    <div>
+                        <div class="stat-value text-primary" th:text="${activeExpectationCount}">0</div>
+                        <div class="stat-label">Aktif Beklenti</div>
+                    </div>
+                </div>
+                <a href="/expectations" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card h-100 position-relative">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">📬</div>
+                    <div>
+                        <div class="stat-value text-success" th:text="${totalMatchCount}">0</div>
+                        <div class="stat-label">Toplam Eşleşme</div>
+                    </div>
+                </div>
+                <a href="/matches" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card h-100 position-relative">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">🔔</div>
+                    <div>
+                        <div class="stat-value text-warning" th:text="${unreadNotificationCount}">0</div>
+                        <div class="stat-label">Okunmamış Bildirim</div>
+                    </div>
+                </div>
+                <a href="/notifications" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card h-100 position-relative">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-info bg-opacity-10 text-info">✅</div>
+                    <div>
+                        <div class="stat-value text-info" th:text="${todayMatchCount}">0</div>
+                        <div class="stat-label">Bugünkü Eşleşme</div>
+                    </div>
+                </div>
+                <a href="/matches?period=today" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Son Eşleşmeler -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="section-title"><i class="bi bi-envelope-check me-2 text-success"></i>Son Eşleşmeler</span>
+                    <a href="/matches" class="btn btn-sm btn-outline-secondary">Tümünü Gör</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(recentMatches)}" class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p class="mb-0">Henüz eşleşme bulunamadı.</p>
+                        <a href="/expectations" class="btn btn-sm btn-primary mt-3">Beklenti Ekle</a>
+                    </div>
+                    <div class="table-responsive" th:unless="${#lists.isEmpty(recentMatches)}">
+                        <table class="table table-hover align-middle mb-0">
+                            <tbody>
+                            <tr th:each="m : ${recentMatches}">
+                                <td class="ps-3">
+                                    <div class="fw-semibold small text-truncate" style="max-width:160px" th:text="${m.fromAddress ?: m.fromEmail}">Gönderen</div>
+                                    <div class="text-muted" style="font-size:12px" th:text="${m.subject ?: '—'}">Konu</div>
+                                </td>
+                                <td>
+                                    <span th:class="${'badge ' + (m.confidenceLevel.name() == 'HIGH' ? 'badge-high' : (m.confidenceLevel.name() == 'MEDIUM' ? 'badge-medium' : 'badge-low'))}"
+                                          th:text="${m.confidenceLevel.name() == 'HIGH' ? 'Yüksek' : (m.confidenceLevel.name() == 'MEDIUM' ? 'Orta' : 'Düşük')}">Orta</span>
+                                </td>
+                                <td class="text-muted small pe-3" style="white-space:nowrap"
+                                    th:text="${m.createdAt != null ? #temporals.format(m.createdAt, 'dd.MM.yy HH:mm') : '—'}">Tarih</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Son Bildirimler -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="section-title"><i class="bi bi-bell me-2 text-warning"></i>Son Bildirimler</span>
+                    <a href="/notifications" class="btn btn-sm btn-outline-secondary">Tümünü Gör</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(recentNotifications)}" class="empty-state">
+                        <div class="empty-icon">🔕</div>
+                        <p class="mb-0">Henüz bildirim yok.</p>
+                    </div>
+                    <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(recentNotifications)}">
+                        <li th:each="n : ${recentNotifications}"
+                            th:class="${'list-group-item px-3 py-3 ' + (!n.isRead ? 'bg-light' : '')}">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="small" th:text="${n.message}">Mesaj</div>
+                                <span class="text-muted flex-shrink-0"
+                                      style="font-size:11px"
+                                      th:attr="data-time=${n.createdAt}">tarih</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+<th:block th:replace="~{fragments/scripts :: scripts}"></th:block>
+</body>
+</html>

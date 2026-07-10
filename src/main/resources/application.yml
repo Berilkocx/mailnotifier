@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: mailnotifier
+  profiles:
+    active: dev
+  jpa:
+    open-in-view: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - email
+              - profile
+              - https://www.googleapis.com/auth/gmail.readonly
+            redirect-uri: '{baseUrl}/login/oauth2/code/{registrationId}'
+            authorization-grant-type: authorization_code
+        provider:
+          google:
+            # access_type=offline + prompt=consent → refresh token her seferinde gelir
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://openid.googleapis.com/v1/userinfo
+            user-name-attribute: sub
+
+mailnotifier:
+  scan:
+    enabled: true
+    interval: 60000  # ms (1 dakika)
+  matching:
+    strategy: string  # "string" veya "nlp"
+  ai:
+    api-key: ${AI_API_KEY:}
+    rate-limit:
+      max-requests-per-minute: 20
+      max-analysis-per-scan: 5
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.beril.mailnotifier: INFO
+    AUDIT: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

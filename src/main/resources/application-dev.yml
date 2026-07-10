@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mailnotifier_db
+    username: mailnotifier
+    password: mailnotifier
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+
+mailnotifier:
+  scan:
+    interval: 30000  # dev ortamında 30 sn
+  matching:
+    strategy: string  # nlp yapmak için AI_API_KEY set et ve "nlp" yap
+
+springdoc:
+  swagger-ui:
+    enabled: true
+
+logging:
+  level:
+    com.beril.mailnotifier: DEBUG
+    AUDIT: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG

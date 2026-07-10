@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="scripts">
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SockJS + STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <!-- MailNotifier shared JS -->
+    <script src="/js/app.js"></script>
+    <!-- WebSocket başlatma -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const _currentUserId = /*[[${user != null ? user.id : ''}]]*/ '';
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebSocket(_currentUserId.toString());
+            requestBrowserPermission();
+            applyRelativeTimes();
+        });
+        /*]]>*/
+    </script>
+</th:block>
+</body>
+</html>

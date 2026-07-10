@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="tr">
+<head th:replace="~{fragments/head :: head('Beklentilerim')}"></head>
+<body class="d-flex flex-column min-vh-100">
+
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+<main class="container-fluid px-4 py-4 flex-grow-1">
+
+    <!-- Başlık + Yeni Beklenti Butonu -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold">Beklentilerim</h4>
+            <p class="text-muted small mb-0">Hangi maillerden bildirim almak istediğinizi tanımlayın.</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#expectationModal" onclick="openAddModal()">
+            <i class="bi bi-plus-lg me-1"></i>Yeni Beklenti
+        </button>
+    </div>
+
+    <!-- Beklenti Listesi -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+
+            <!-- Boş durum -->
+            <div th:if="${#lists.isEmpty(expectations)}" class="empty-state">
+                <div class="empty-icon">📝</div>
+                <p class="mb-0 fw-semibold">Henüz beklenti eklemediniz.</p>
+                <p class="text-muted small">İlk beklentinizi ekleyerek başlayın!</p>
+                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#expectationModal" onclick="openAddModal()">
+                    <i class="bi bi-plus-lg me-1"></i>Beklenti Ekle
+                </button>
+            </div>
+
+            <!-- Tablo -->
+            <div th:unless="${#lists.isEmpty(expectations)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Gönderen Bilgisi</th>
+                        <th>Anahtar Kelimeler</th>
+                        <th>Açıklama</th>
+                        <th>Durum</th>
+                        <th class="text-center">Eşleşme</th>
+                        <th>Oluşturulma</th>
+                        <th class="pe-3">Aksiyonlar</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="exp : ${expectations}">
+                        <td class="ps-3">
+                            <span class="fw-semibold small" th:text="${exp.senderIdentifier ?: '—'}">Gönderen</span>
+                        </td>
+                        <td>
+                            <div th:if="${!#lists.isEmpty(exp.keywords)}" class="d-flex flex-wrap gap-1">
+                                <span th:each="kw : ${exp.keywords}"
+                                      class="badge bg-light text-dark border"
+                                      th:text="${kw}">kelime</span>
+                            </div>
+                            <span th:if="${#lists.isEmpty(exp.keywords)}" class="text-muted small">—</span>
+                        </td>
+                        <td class="text-muted small" style="max-width:200px">
+                            <span class="text-truncate d-inline-block" style="max-width:180px"
+                                  th:text="${exp.description ?: '—'}">Açıklama</span>
+                        </td>
+                        <td>
+                            <span th:if="${exp.isActive}" class="badge bg-success">Aktif</span>
+                            <span th:unless="${exp.isActive}" class="badge bg-secondary">Pasif</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border" th:text="${exp.matchCount}">0</span>
+                        </td>
+                        <td class="text-muted small"
+                            th:text="${exp.createdAt != null ? #temporals.format(exp.createdAt, 'dd.MM.yyyy') : '—'}">Tarih</td>
+                        <td class="pe-3">
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        th:onclick="|openEditModal('${exp.id}','${exp.senderIdentifier ?: ''}','${exp.keywords != null ? #strings.arrayJoin(exp.keywords.toArray(), ', ') : ''}','${exp.description ?: ''}')|"
+                                        title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button th:if="${exp.isActive}"
+                                        class="btn btn-sm btn-outline-warning"
+                                        th:onclick="|deactivateExpectation('${exp.id}')|"
+                                        title="Deaktif Et">
+                                    <i class="bi bi-pause-circle"></i>
+                                </button>
+                                <button th:unless="${exp.isActive}"
+                                        class="btn btn-sm btn-outline-success"
+                                        th:onclick="|activateExpectation('${exp.id}')|"
+                                        title="Aktifleştir">
+                                    <i class="bi bi-play-circle"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        th:onclick="|deleteExpectation('${exp.id}')|"
+                                        title="Sil">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Beklenti Modal -->
+<div class="modal fade" id="expectationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Yeni Beklenti</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="expId">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Gönderen Bilgisi</label>
+                    <input type="text" class="form-control" id="expSender"
+                           placeholder="Ad, soyad, email veya kurum adı (ör: Ahmet Yılmaz, firma.com)">
+                    <div class="form-text">Tam email, domain, ad veya kurum adının bir kısmı olabilir.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Anahtar Kelimeler</label>
+                    <input type="text" class="form-control" id="expKeywords"
+                           placeholder="teklif, mülakat, başvuru (virgülle ayırın)">
+                    <div class="form-text">Mail konusu ve içeriğinde aranacak kelimeler.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Açıklama <span class="text-muted fw-normal">(opsiyonel)</span></label>
+                    <textarea class="form-control" id="expDescription" rows="2"
+                              placeholder="Bu beklentiyi kendi kendinize açıklayın"></textarea>
+                    <div class="mt-1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="suggestBtn" onclick="suggestKeywords()">
+                            🤖 Keyword Öner
+                        </button>
+                    </div>
+                </div>
+                <div id="suggestResult" class="d-none mb-3">
+                    <div class="fw-semibold small text-secondary mb-1">AI Önerileri <span class="text-muted fw-normal">(eklemek için tıklayın)</span></div>
+                    <div id="suggestBadges" class="d-flex flex-wrap gap-1"></div>
+                </div>
+                <div id="expError" class="alert alert-danger d-none small py-2">
+                    En az bir kriter girilmeli: gönderen bilgisi veya anahtar kelime.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="expSaveBtn" onclick="saveExpectation()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+<th:block th:replace="~{fragments/scripts :: scripts}"></th:block>
+
+<script>
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = 'Yeni Beklenti';
+        document.getElementById('expId').value = '';
+        document.getElementById('expSender').value = '';
+        document.getElementById('expKeywords').value = '';
+        document.getElementById('expDescription').value = '';
+        document.getElementById('expSaveBtn').textContent = 'Kaydet';
+        document.getElementById('expError').classList.add('d-none');
+        document.getElementById('suggestResult').classList.add('d-none');
+        document.getElementById('suggestBadges').innerHTML = '';
+    }
+
+    function openEditModal(id, sender, keywords, description) {
+        document.getElementById('modalTitle').textContent = 'Beklenti Düzenle';
+        document.getElementById('expId').value = id;
+        document.getElementById('expSender').value = sender;
+        document.getElementById('expKeywords').value = keywords;
+        document.getElementById('expDescription').value = description;
+        document.getElementById('expSaveBtn').textContent = 'Güncelle';
+        document.getElementById('expError').classList.add('d-none');
+        document.getElementById('suggestResult').classList.add('d-none');
+        document.getElementById('suggestBadges').innerHTML = '';
+        new bootstrap.Modal(document.getElementById('expectationModal')).show();
+    }
+
+    async function suggestKeywords() {
+        const description = document.getElementById('expDescription').value.trim();
+        const senderInput = document.getElementById('expSender').value.trim();
+        const query = description || senderInput;
+        if (!query) {
+            alert('Lütfen önce açıklama veya gönderen bilgisi girin.');
+            return;
+        }
+        const btn = document.getElementById('suggestBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Yükleniyor...';
+        try {
+            const resp = await fetch('/api/ai/suggest-keywords', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: query })
+            });
+            if (!resp.ok) throw new Error('API hatası');
+            const json = await resp.json();
+            const keywords = json.data?.suggestedKeywords ?? [];
+            const container = document.getElementById('suggestBadges');
+            container.innerHTML = '';
+            if (keywords.length === 0) {
+                container.innerHTML = '<span class="text-muted small">Öneri bulunamadı.</span>';
+            } else {
+                keywords.forEach(kw => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 cursor-pointer';
+                    badge.style.cursor = 'pointer';
+                    badge.textContent = kw;
+                    badge.title = 'Tıkla: anahtar kelimelere ekle';
+                    badge.onclick = () => addSuggestedKeyword(kw, badge);
+                    container.appendChild(badge);
+                });
+            }
+            document.getElementById('suggestResult').classList.remove('d-none');
+        } catch (e) {
+            alert('Keyword önerisi alınamadı. AI servisi aktif olmayabilir.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🤖 Keyword Öner';
+        }
+    }
+
+    function addSuggestedKeyword(kw, badge) {
+        const field = document.getElementById('expKeywords');
+        const existing = field.value.split(',').map(k => k.trim()).filter(k => k);
+        if (!existing.includes(kw)) {
+            field.value = existing.length ? existing.join(', ') + ', ' + kw : kw;
+        }
+        badge.classList.remove('bg-primary', 'text-primary', 'border-primary');
+        badge.classList.add('bg-success', 'text-success', 'border-success');
+    }
+
+
+    async function saveExpectation() {
+        const id = document.getElementById('expId').value;
+        const sender = document.getElementById('expSender').value.trim();
+        const keywordsRaw = document.getElementById('expKeywords').value;
+        const keywords = keywordsRaw.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        const description = document.getElementById('expDescription').value.trim() || null;
+
+        if (!sender && keywords.length === 0) {
+            document.getElementById('expError').classList.remove('d-none');
+            return;
+        }
+
+        const data = { senderIdentifier: sender || null, keywords, description };
+        const url  = id ? `/api/expectations/${id}` : '/api/expectations';
+        const method = id ? 'PUT' : 'POST';
+
+        await apiCall(url, { method, body: JSON.stringify(data) });
+        window.location.reload();
+    }
+
+    async function deactivateExpectation(id) {
+        await apiCall(`/api/expectations/${id}`, { method: 'DELETE' });
+        window.location.reload();
+    }
+
+    async function activateExpectation(id) {
+        await apiCall(`/api/expectations/${id}/activate`, { method: 'POST' });
+        window.location.reload();
+    }
+
+    async function deleteExpectation(id) {
+        if (!confirm('Bu beklentiyi kalıcı olarak silmek istediğinizden emin misiniz?')) return;
+        await apiCall(`/api/expectations/${id}`, { method: 'DELETE' });
+        window.location.reload();
+    }
+</script>
+</body>
+</html>
