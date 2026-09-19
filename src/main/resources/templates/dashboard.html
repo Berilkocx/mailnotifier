@@ -5,116 +5,132 @@
 
 <nav th:replace="~{fragments/navbar :: navbar}"></nav>
 
-<main class="container-fluid px-4 py-4 flex-grow-1">
+<main class="container-fluid px-3 px-lg-4 py-4 flex-grow-1">
+<div class="page-shell">
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"
+                th:text="${'Merhaba, ' + (user != null and user.name != null ? #strings.substringBefore(user.name + ' ', ' ') : '') + ' 👋'}">Merhaba 👋</h1>
+            <p class="page-sub">Beklediğiniz maillerin son durumu burada.</p>
+        </div>
+        <a href="/expectations" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Yeni Beklenti</a>
+    </div>
 
     <!-- Özet Kartlar -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card stat-card h-100 position-relative">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">📋</div>
+    <div class="row g-3 g-lg-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card stat-primary card-hover h-100">
+                <div class="card-body">
+                    <div class="stat-icon"><i class="bi bi-list-check"></i></div>
                     <div>
-                        <div class="stat-value text-primary" th:text="${activeExpectationCount}">0</div>
+                        <div class="stat-value" th:text="${activeExpectationCount}">0</div>
                         <div class="stat-label">Aktif Beklenti</div>
+                        <div class="stat-desc">Takip edilen kriterler</div>
                     </div>
                 </div>
-                <a href="/expectations" class="stretched-link"></a>
+                <a href="/expectations" class="stretched-link" aria-label="Beklentilerim"></a>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card stat-card h-100 position-relative">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-success bg-opacity-10 text-success">📬</div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card stat-success card-hover h-100">
+                <div class="card-body">
+                    <div class="stat-icon"><i class="bi bi-envelope-check"></i></div>
                     <div>
-                        <div class="stat-value text-success" th:text="${totalMatchCount}">0</div>
+                        <div class="stat-value" th:text="${totalMatchCount}">0</div>
                         <div class="stat-label">Toplam Eşleşme</div>
+                        <div class="stat-desc">Bulunan tüm mailler</div>
                     </div>
                 </div>
-                <a href="/matches" class="stretched-link"></a>
+                <a href="/matches" class="stretched-link" aria-label="Eşleşmeler"></a>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card stat-card h-100 position-relative">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">🔔</div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card stat-pink card-hover h-100">
+                <div class="card-body">
+                    <div class="stat-icon"><i class="bi bi-bell"></i></div>
                     <div>
-                        <div class="stat-value text-warning" th:text="${unreadNotificationCount}">0</div>
+                        <div class="stat-value" th:text="${unreadNotificationCount}">0</div>
                         <div class="stat-label">Okunmamış Bildirim</div>
+                        <div class="stat-desc">Bakmanız gerekenler</div>
                     </div>
                 </div>
-                <a href="/notifications" class="stretched-link"></a>
+                <a href="/notifications" class="stretched-link" aria-label="Bildirimler"></a>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card stat-card h-100 position-relative">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-icon bg-info bg-opacity-10 text-info">✅</div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card stat-card stat-warning card-hover h-100">
+                <div class="card-body">
+                    <div class="stat-icon"><i class="bi bi-lightning-charge"></i></div>
                     <div>
-                        <div class="stat-value text-info" th:text="${todayMatchCount}">0</div>
+                        <div class="stat-value" th:text="${todayMatchCount}">0</div>
                         <div class="stat-label">Bugünkü Eşleşme</div>
+                        <div class="stat-desc">Son 24 saat</div>
                     </div>
                 </div>
-                <a href="/matches?period=today" class="stretched-link"></a>
+                <a href="/matches?period=today" class="stretched-link" aria-label="Bugünkü eşleşmeler"></a>
             </div>
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- Son Eşleşmeler -->
+    <div class="row g-3 g-lg-4">
+        <!-- Son Eşleşmeler: timeline -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <span class="section-title"><i class="bi bi-envelope-check me-2 text-success"></i>Son Eşleşmeler</span>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3 px-4">
+                    <h2 class="section-title"><i class="bi bi-envelope-check"></i>Son Eşleşmeler</h2>
                     <a href="/matches" class="btn btn-sm btn-outline-secondary">Tümünü Gör</a>
                 </div>
                 <div class="card-body p-0">
                     <div th:if="${#lists.isEmpty(recentMatches)}" class="empty-state">
-                        <div class="empty-icon">📭</div>
-                        <p class="mb-0">Henüz eşleşme bulunamadı.</p>
-                        <a href="/expectations" class="btn btn-sm btn-primary mt-3">Beklenti Ekle</a>
+                        <div class="empty-emoji">📭</div>
+                        <p class="mb-1 fw-semibold">Henüz eşleşme bulunamadı.</p>
+                        <a href="/expectations" class="btn btn-sm btn-primary mt-2">Beklenti Ekle</a>
                     </div>
-                    <div class="table-responsive" th:unless="${#lists.isEmpty(recentMatches)}">
-                        <table class="table table-hover align-middle mb-0">
-                            <tbody>
-                            <tr th:each="m : ${recentMatches}">
-                                <td class="ps-3">
-                                    <div class="fw-semibold small text-truncate" style="max-width:160px" th:text="${m.fromAddress ?: m.fromEmail}">Gönderen</div>
-                                    <div class="text-muted" style="font-size:12px" th:text="${m.subject ?: '—'}">Konu</div>
-                                </td>
-                                <td>
+                    <ul class="timeline" th:unless="${#lists.isEmpty(recentMatches)}">
+                        <li class="timeline-item" th:each="m : ${recentMatches}">
+                            <span th:class="${'timeline-dot ' + (m.confidenceLevel.name() == 'HIGH' ? 'dot-high' : (m.confidenceLevel.name() == 'MEDIUM' ? 'dot-medium' : 'dot-low'))}"></span>
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div class="min-w-0">
+                                    <div class="timeline-from text-break" th:text="${m.fromAddress ?: m.fromEmail}">Gönderen</div>
+                                    <div class="timeline-email text-break" th:if="${m.fromEmail != null and m.fromEmail != m.fromAddress}" th:text="${m.fromEmail}">mail@adres.com</div>
+                                    <div class="timeline-subject text-break" th:text="${m.subject ?: '—'}">Konu</div>
+                                </div>
+                                <div class="d-flex flex-row flex-sm-column align-items-center align-items-sm-end gap-2 gap-sm-1">
                                     <span th:class="${'badge ' + (m.confidenceLevel.name() == 'HIGH' ? 'badge-high' : (m.confidenceLevel.name() == 'MEDIUM' ? 'badge-medium' : 'badge-low'))}"
                                           th:text="${m.confidenceLevel.name() == 'HIGH' ? 'Yüksek' : (m.confidenceLevel.name() == 'MEDIUM' ? 'Orta' : 'Düşük')}">Orta</span>
-                                </td>
-                                <td class="text-muted small pe-3" style="white-space:nowrap"
-                                    th:text="${m.createdAt != null ? #temporals.format(m.createdAt, 'dd.MM.yy HH:mm') : '—'}">Tarih</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                    <span class="timeline-time"
+                                          th:text="${m.createdAt != null ? #temporals.format(m.createdAt, 'dd.MM.yy HH:mm') : '—'}"
+                                          th:attr="data-time=${m.createdAt}">Tarih</span>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
 
         <!-- Son Bildirimler -->
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <span class="section-title"><i class="bi bi-bell me-2 text-warning"></i>Son Bildirimler</span>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-3 px-4">
+                    <h2 class="section-title"><i class="bi bi-bell"></i>Son Bildirimler</h2>
                     <a href="/notifications" class="btn btn-sm btn-outline-secondary">Tümünü Gör</a>
                 </div>
                 <div class="card-body p-0">
                     <div th:if="${#lists.isEmpty(recentNotifications)}" class="empty-state">
-                        <div class="empty-icon">🔕</div>
-                        <p class="mb-0">Henüz bildirim yok.</p>
+                        <div class="empty-emoji">🔕</div>
+                        <p class="mb-0 fw-semibold">Henüz bildirim yok.</p>
                     </div>
-                    <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(recentNotifications)}">
+                    <ul class="notif-list" th:unless="${#lists.isEmpty(recentNotifications)}">
                         <li th:each="n : ${recentNotifications}"
-                            th:class="${'list-group-item px-3 py-3 ' + (!n.isRead ? 'bg-light' : '')}">
-                            <div class="d-flex justify-content-between align-items-start gap-2">
-                                <div class="small" th:text="${n.message}">Mesaj</div>
-                                <span class="text-muted flex-shrink-0"
-                                      style="font-size:11px"
-                                      th:attr="data-time=${n.createdAt}">tarih</span>
+                            th:class="${'notif-item ' + (!n.isRead ? 'is-unread' : '')}">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div class="notif-msg" th:text="${n.message}">Mesaj</div>
+                                <div class="text-end flex-shrink-0">
+                                    <div class="notif-rel" th:attr="data-time=${n.createdAt}"
+                                         th:text="${n.createdAt != null ? #temporals.format(n.createdAt, 'dd.MM.yy HH:mm') : '—'}">tarih</div>
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -122,6 +138,8 @@
             </div>
         </div>
     </div>
+
+</div>
 </main>
 
 <footer th:replace="~{fragments/footer :: footer}"></footer>

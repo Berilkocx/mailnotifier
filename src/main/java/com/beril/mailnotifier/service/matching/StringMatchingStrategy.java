@@ -11,7 +11,6 @@ import java.util.Locale;
 public class StringMatchingStrategy implements MatchingStrategy {
 
     private static final Locale TURKISH = Locale.of("tr", "TR");
-    private static final int MIN_TOKEN_LENGTH = 3;
 
     @Override
     public MatchResult match(MailMessage mail, MailExpectation expectation) {
@@ -54,16 +53,16 @@ public class StringMatchingStrategy implements MatchingStrategy {
     }
 
     private double calculateSenderScore(MailMessage mail, String senderIdentifier, List<String> matchedTokens) {
-        List<String> tokens = tokenize(senderIdentifier);
+        List<String> tokens = SenderTokenizer.tokenize(senderIdentifier);
         if (tokens.isEmpty()) return 0.0;
 
         String effectiveContent = mail.body() != null && !mail.body().isBlank() ? mail.body() : mail.snippet();
         int matched = 0;
         for (String token : tokens) {
-            if (fieldContains(mail.from(), token)
-                    || fieldContains(mail.fromEmail(), token)
-                    || fieldContains(mail.subject(), token)
-                    || fieldContains(effectiveContent, token)) {
+            if (SenderTokenizer.fieldContains(mail.from(), token)
+                    || SenderTokenizer.fieldContains(mail.fromEmail(), token)
+                    || SenderTokenizer.fieldContains(mail.subject(), token)
+                    || SenderTokenizer.fieldContains(effectiveContent, token)) {
                 matchedTokens.add(token);
                 matched++;
             }
@@ -76,50 +75,12 @@ public class StringMatchingStrategy implements MatchingStrategy {
         int matchCount = 0;
         for (String keyword : keywords) {
             String k = keyword.toLowerCase(TURKISH);
-            if (fieldContains(mail.subject(), k) || fieldContains(effectiveContent, k)) {
+            if (SenderTokenizer.fieldContains(mail.subject(), k) || SenderTokenizer.fieldContains(effectiveContent, k)) {
                 matched.add(keyword);
                 matchCount++;
             }
         }
         return (double) matchCount / keywords.size();
-    }
-
-    /**
-     * senderIdentifier'ı token'lara ayırır.
-     * "Ahmet Yılmaz" → ["ahmet", "yılmaz"]
-     * "ahmet@firma.com" → ["ahmet@firma.com", "ahmet", "firma.com", "firma"]
-     */
-    private List<String> tokenize(String senderIdentifier) {
-        List<String> tokens = new ArrayList<>();
-        String[] parts = senderIdentifier.trim().split("\\s+");
-
-        for (String part : parts) {
-            String lower = part.toLowerCase(TURKISH);
-            if (lower.length() >= MIN_TOKEN_LENGTH) {
-                tokens.add(lower);
-            }
-            if (part.contains("@")) {
-                String[] emailParts = part.split("@", 2);
-                String local = emailParts[0].toLowerCase(TURKISH);
-                if (local.length() >= MIN_TOKEN_LENGTH) tokens.add(local);
-
-                if (emailParts.length == 2) {
-                    String domain = emailParts[1].toLowerCase(TURKISH);
-                    if (domain.length() >= MIN_TOKEN_LENGTH) tokens.add(domain);
-                    int dot = domain.lastIndexOf('.');
-                    if (dot > 0) {
-                        String domainBase = domain.substring(0, dot);
-                        if (domainBase.length() >= MIN_TOKEN_LENGTH) tokens.add(domainBase);
-                    }
-                }
-            }
-        }
-        return tokens.stream().distinct().toList();
-    }
-
-    private boolean fieldContains(String field, String token) {
-        if (field == null || field.isBlank()) return false;
-        return field.toLowerCase(TURKISH).contains(token);
     }
 
     public ConfidenceLevel resolveConfidence(double score) {

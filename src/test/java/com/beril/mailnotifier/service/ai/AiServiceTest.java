@@ -14,6 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -23,6 +24,9 @@ class AiServiceTest {
 
     @Mock
     private AiRateLimiter rateLimiter;
+
+    private static final ExpectationContext CTX =
+            new ExpectationContext("Yazılım projesi teklifi bekliyorum", "firma.com", List.of("teklif", "proje"));
 
     private MockRestServiceServer mockServer;
     private OpenAiService openAiService;
@@ -52,7 +56,7 @@ class AiServiceTest {
         mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
                 .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
 
-        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Teklif", "İçerik");
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Teklif", "İçerik", CTX);
 
         assertThat(result.intent()).isEqualTo("TEKLIF");
         assertThat(result.topics()).containsExactly("yazılım", "proje");
@@ -62,10 +66,71 @@ class AiServiceTest {
     }
 
     @Test
+    void analyzeEmail_shouldParseRelevanceAndReason() {
+        when(rateLimiter.tryAcquire()).thenReturn(true);
+        String responseJson = """
+                {
+                  "choices": [{
+                    "message": {
+                      "content": "{\\"relevance\\":0.85,\\"reason\\":\\"Beklenen teklif geldi\\",\\"intent\\":\\"TEKLIF\\",\\"topics\\":[\\"yazılım\\"],\\"summary\\":\\"Teklif 15 Ekim'e kadar geçerli\\",\\"confidence\\":0.9}"
+                    }
+                  }]
+                }
+                """;
+
+        mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Teklif", "İçerik", CTX);
+
+        assertThat(result.hasRelevance()).isTrue();
+        assertThat(result.relevance()).isEqualTo(0.85);
+        assertThat(result.reason()).isEqualTo("Beklenen teklif geldi");
+        assertThat(result.summary()).contains("15 Ekim");
+    }
+
+    @Test
+    void analyzeEmail_whenRelevanceMissing_relevanceIsUnknown() {
+        when(rateLimiter.tryAcquire()).thenReturn(true);
+        String responseJson = """
+                {
+                  "choices": [{
+                    "message": {
+                      "content": "{\\"intent\\":\\"GENEL\\",\\"topics\\":[\\"x\\"],\\"summary\\":\\"Özet\\",\\"confidence\\":0.5}"
+                    }
+                  }]
+                }
+                """;
+
+        mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
+                .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
+
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik", CTX);
+
+        assertThat(result.hasRelevance()).isFalse();
+    }
+
+    @Test
+    void analyzeEmail_sendsUserExpectationToModel() {
+        when(rateLimiter.tryAcquire()).thenReturn(true);
+
+        mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Yazılım projesi teklifi bekliyorum")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("firma.com")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("teklif, proje")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("json_object")))
+                .andRespond(withSuccess("{\"choices\":[{\"message\":{\"content\":\"{}\"}}]}", MediaType.APPLICATION_JSON));
+
+        openAiService.analyzeEmail("test@example.com", "Konu", "İçerik", CTX);
+
+        mockServer.verify();
+    }
+
+    @Test
     void analyzeEmail_whenRateLimitExceeded_returnsEmpty() {
         when(rateLimiter.tryAcquire()).thenReturn(false);
 
-        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik");
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik", CTX);
 
         assertThat(result.isEmpty()).isTrue();
     }
@@ -86,7 +151,7 @@ class AiServiceTest {
         mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
                 .andRespond(withSuccess(badResponse, MediaType.APPLICATION_JSON));
 
-        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik");
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik", CTX);
 
         assertThat(result.isEmpty()).isTrue();
     }
@@ -98,7 +163,7 @@ class AiServiceTest {
         mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
                 .andRespond(withServerError());
 
-        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik");
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", "İçerik", CTX);
 
         assertThat(result.isEmpty()).isTrue();
     }
@@ -120,7 +185,7 @@ class AiServiceTest {
         mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("/chat/completions")))
                 .andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
 
-        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", longSnippet);
+        AiAnalysisResult result = openAiService.analyzeEmail("test@example.com", "Konu", longSnippet, CTX);
 
         assertThat(result).isNotNull();
         assertThat(result.isEmpty()).isFalse();
@@ -159,7 +224,7 @@ class AiServiceTest {
     void noOpAiService_alwaysReturnsEmptyAndUnavailable() {
         AiService noop = new NoOpAiService();
 
-        assertThat(noop.analyzeEmail("a@b.com", "Konu", "İçerik").isEmpty()).isTrue();
+        assertThat(noop.analyzeEmail("a@b.com", "Konu", "İçerik", CTX).isEmpty()).isTrue();
         assertThat(noop.suggestKeywords("bir şey")).isEmpty();
         assertThat(noop.isAvailable()).isFalse();
     }

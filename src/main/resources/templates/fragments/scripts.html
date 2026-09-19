@@ -14,9 +14,13 @@
         /*<![CDATA[*/
         const _currentUserId = /*[[${user != null ? user.id : ''}]]*/ '';
         document.addEventListener('DOMContentLoaded', () => {
-            initWebSocket(_currentUserId.toString());
-            requestBrowserPermission();
             applyRelativeTimes();
+            try {
+                initWebSocket(_currentUserId.toString());
+                requestBrowserPermission();
+            } catch (e) {
+                console.warn('WebSocket başlatılamadı:', e);
+            }
         });
         /*]]>*/
     </script>

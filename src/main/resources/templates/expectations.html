@@ -5,172 +5,168 @@
 
 <nav th:replace="~{fragments/navbar :: navbar}"></nav>
 
-<main class="container-fluid px-4 py-4 flex-grow-1">
+<main class="container-fluid px-3 px-lg-4 py-4 flex-grow-1">
+<div class="page-shell">
 
-    <!-- Başlık + Yeni Beklenti Butonu -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header">
         <div>
-            <h4 class="mb-1 fw-bold">Beklentilerim</h4>
-            <p class="text-muted small mb-0">Hangi maillerden bildirim almak istediğinizi tanımlayın.</p>
+            <h1 class="page-title">Beklentilerim</h1>
+            <p class="page-sub">Hangi maillerden bildirim almak istediğinizi tanımlayın.</p>
         </div>
-        <button class="btn btn-primary" onclick="openAddModal()">
+        <button class="btn btn-primary" onclick="openAddPanel()">
             <i class="bi bi-plus-lg me-1"></i>Yeni Beklenti
         </button>
     </div>
 
-    <!-- Beklenti Listesi -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-
-            <!-- Boş durum -->
-            <div th:if="${#lists.isEmpty(expectations)}" class="empty-state">
-                <div class="empty-icon">📝</div>
-                <p class="mb-0 fw-semibold">Henüz beklenti eklemediniz.</p>
-                <p class="text-muted small">İlk beklentinizi ekleyerek başlayın!</p>
-                <button class="btn btn-primary mt-2" onclick="openAddModal()">
-                    <i class="bi bi-plus-lg me-1"></i>Beklenti Ekle
-                </button>
-            </div>
-
-            <!-- Tablo -->
-            <div th:unless="${#lists.isEmpty(expectations)}" class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th class="ps-3">Gönderen Bilgisi</th>
-                        <th>Anahtar Kelimeler</th>
-                        <th>Açıklama</th>
-                        <th>Durum</th>
-                        <th class="text-center">Eşleşme</th>
-                        <th>Oluşturulma</th>
-                        <th class="pe-3">Aksiyonlar</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="exp : ${expectations}">
-                        <td class="ps-3">
-                            <span class="fw-semibold small" th:text="${exp.senderIdentifier ?: '—'}">Gönderen</span>
-                        </td>
-                        <td>
-                            <div th:if="${!#lists.isEmpty(exp.keywords)}" class="d-flex flex-wrap gap-1">
-                                <span th:each="kw : ${exp.keywords}"
-                                      class="badge bg-light text-dark border"
-                                      th:text="${kw}">kelime</span>
-                            </div>
-                            <span th:if="${#lists.isEmpty(exp.keywords)}" class="text-muted small">—</span>
-                        </td>
-                        <td class="text-muted small" style="max-width:200px">
-                            <span class="text-truncate d-inline-block" style="max-width:180px"
-                                  th:text="${exp.description ?: '—'}">Açıklama</span>
-                        </td>
-                        <td>
-                            <span th:if="${exp.isActive}" class="badge bg-success">Aktif</span>
-                            <span th:unless="${exp.isActive}" class="badge bg-secondary">Pasif</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-light text-dark border" th:text="${exp.matchCount}">0</span>
-                        </td>
-                        <td class="text-muted small"
-                            th:text="${exp.createdAt != null ? #temporals.format(exp.createdAt, 'dd.MM.yyyy') : '—'}">Tarih</td>
-                        <td class="pe-3">
-                            <div class="d-flex gap-1">
-                                <!-- Düzenle: veriler data-* attribute ile taşınır (quote escaping sorunu önlenir) -->
-                                <button class="btn btn-sm btn-outline-primary"
-                                        th:attr="data-exp-id=${exp.id},
-                                                 data-exp-sender=${exp.senderIdentifier ?: ''},
-                                                 data-exp-keywords=${exp.keywords != null ? #strings.arrayJoin(exp.keywords.toArray(), ', ') : ''},
-                                                 data-exp-description=${exp.description ?: ''}"
-                                        onclick="openEditModal(this)"
-                                        title="Düzenle">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <!-- Deaktif Et (soft delete – pasif yapar, geri alınabilir) -->
-                                <button th:if="${exp.isActive}"
-                                        class="btn btn-sm btn-outline-warning"
-                                        th:attr="data-exp-id=${exp.id}"
-                                        onclick="deactivateExpectation(this.dataset.expId)"
-                                        title="Deaktif Et">
-                                    <i class="bi bi-pause-circle"></i>
-                                </button>
-                                <!-- Aktifleştir -->
-                                <button th:unless="${exp.isActive}"
-                                        class="btn btn-sm btn-outline-success"
-                                        th:attr="data-exp-id=${exp.id}"
-                                        onclick="activateExpectation(this.dataset.expId)"
-                                        title="Aktifleştir">
-                                    <i class="bi bi-play-circle"></i>
-                                </button>
-                                <!-- Sil (kalıcı – geri alınamaz) -->
-                                <button class="btn btn-sm btn-outline-danger"
-                                        th:attr="data-exp-id=${exp.id}"
-                                        onclick="deleteExpectation(this.dataset.expId)"
-                                        title="Sil">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+    <!-- Boş durum -->
+    <div th:if="${#lists.isEmpty(expectations)}" class="card">
+        <div class="empty-state">
+            <svg viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <ellipse cx="100" cy="134" rx="62" ry="8" fill="currentColor" opacity=".08"/>
+                <rect x="28" y="38" width="144" height="88" rx="14" fill="#6366F1"/>
+                <path d="M28 52c0-7.7 6.3-14 14-14h116c7.7 0 14 6.3 14 14L100 92 28 52z" fill="#818CF8"/>
+                <path d="M28 120c0 3.3 2.7 6 6 6h132c3.3 0 6-2.7 6-6L120 84l-20 11-20-11-52 36z" fill="#4F46E5" opacity=".55"/>
+                <circle cx="158" cy="34" r="22" fill="#EC4899"/>
+                <path d="M158 22v24M146 34h24" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+                <path d="M30 22l3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8z" fill="#F59E0B"/>
+                <circle cx="176" cy="92" r="4" fill="#10B981"/>
+                <circle cx="20" cy="84" r="3" fill="#EC4899"/>
+            </svg>
+            <h5>İlk beklentinizi ekleyin</h5>
+            <p class="text-muted mb-4">Bir gönderen veya anahtar kelime tanımlayın, mail geldiğinde anında haber verelim.</p>
+            <button class="btn btn-primary px-4" onclick="openAddPanel()">
+                <i class="bi bi-plus-lg me-1"></i>Beklenti Ekle
+            </button>
         </div>
     </div>
-</main>
 
-<!-- Beklenti Modal -->
-<div class="modal fade" id="expectationModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Yeni Beklenti</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="expId">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Gönderen Bilgisi</label>
-                    <input type="text" class="form-control" id="expSender"
-                           placeholder="Ad, soyad, email veya kurum adı (ör: Ahmet Yılmaz, firma.com)">
-                    <div class="form-text">Tam email, domain, ad veya kurum adının bir kısmı olabilir.</div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Anahtar Kelimeler</label>
-                    <input type="text" class="form-control" id="expKeywords"
-                           placeholder="teklif, mülakat, başvuru (virgülle ayırın)">
-                    <div class="form-text">Mail konusu ve içeriğinde aranacak kelimeler.</div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Açıklama <span class="text-muted fw-normal">(opsiyonel)</span></label>
-                    <textarea class="form-control" id="expDescription" rows="2"
-                              placeholder="Bu beklentiyi kendi kendinize açıklayın"></textarea>
-                    <div class="mt-1">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="suggestBtn" onclick="suggestKeywords()">
-                            🤖 Keyword Öner
-                        </button>
+    <!-- Beklenti kartları -->
+    <div class="row g-3 g-lg-4" th:unless="${#lists.isEmpty(expectations)}">
+        <div class="col-12 col-md-6 col-xl-4" th:each="exp : ${expectations}">
+            <div th:class="${'card exp-card card-hover ' + (exp.isActive ? 'is-active' : 'is-inactive')}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div class="exp-body min-w-0">
+                            <div class="exp-sender"><i class="bi bi-person-circle me-2 text-primary"></i><span th:text="${exp.senderIdentifier ?: 'Herhangi bir gönderen'}">Gönderen</span></div>
+                        </div>
+                        <span th:if="${exp.isActive}" class="status-pill status-active flex-shrink-0">Aktif</span>
+                        <span th:unless="${exp.isActive}" class="status-pill status-inactive flex-shrink-0">Pasif</span>
+                    </div>
+
+                    <p class="exp-desc exp-body" th:if="${exp.description != null and !exp.description.isEmpty()}" th:text="${exp.description}">Açıklama</p>
+
+                    <div class="d-flex flex-wrap gap-2 exp-body" th:if="${!#lists.isEmpty(exp.keywords)}">
+                        <span th:each="kw, s : ${exp.keywords}" th:class="${'chip chip-' + (s.index % 5)}" th:text="${kw}">kelime</span>
+                    </div>
+                    <div class="text-muted small exp-body" th:if="${#lists.isEmpty(exp.keywords)}">Anahtar kelime yok</div>
+
+                    <div class="exp-meta exp-body">
+                        <span title="Eşleşme sayısı"><i class="bi bi-envelope-check me-1"></i><span th:text="${exp.matchCount}">0</span> eşleşme</span>
+                        <span title="Oluşturulma"><i class="bi bi-calendar3 me-1"></i><span th:text="${exp.createdAt != null ? #temporals.format(exp.createdAt, 'dd.MM.yyyy') : '—'}">Tarih</span></span>
+                    </div>
+
+                    <div class="exp-footer">
+                        <span class="text-muted small" th:if="${exp.matchedAt != null}">
+                            Son eşleşme: <span th:text="${#temporals.format(exp.matchedAt, 'dd.MM HH:mm')}">—</span>
+                        </span>
+                        <span class="text-muted small" th:if="${exp.matchedAt == null}">Henüz eşleşme yok</span>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-primary btn-icon"
+                                    th:attr="data-exp-id=${exp.id},
+                                             data-exp-sender=${exp.senderIdentifier ?: ''},
+                                             data-exp-keywords=${exp.keywords != null ? #strings.arrayJoin(exp.keywords.toArray(), ', ') : ''},
+                                             data-exp-description=${exp.description ?: ''}"
+                                    onclick="openEditPanel(this)" title="Düzenle" aria-label="Düzenle">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button th:if="${exp.isActive}" class="btn btn-sm btn-outline-warning btn-icon"
+                                    th:attr="data-exp-id=${exp.id}" onclick="deactivateExpectation(this.dataset.expId)"
+                                    title="Deaktif Et" aria-label="Deaktif Et">
+                                <i class="bi bi-pause-circle"></i>
+                            </button>
+                            <button th:unless="${exp.isActive}" class="btn btn-sm btn-outline-success btn-icon"
+                                    th:attr="data-exp-id=${exp.id}" onclick="activateExpectation(this.dataset.expId)"
+                                    title="Aktifleştir" aria-label="Aktifleştir">
+                                <i class="bi bi-play-circle"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-icon"
+                                    th:attr="data-exp-id=${exp.id}" onclick="deleteExpectation(this.dataset.expId)"
+                                    title="Sil" aria-label="Sil">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div id="suggestResult" class="d-none mb-3">
-                    <div class="fw-semibold small text-secondary mb-1">AI Önerileri <span class="text-muted fw-normal">(eklemek için tıklayın)</span></div>
-                    <div id="suggestBadges" class="d-flex flex-wrap gap-1"></div>
-                </div>
-                <div id="expError" class="alert alert-danger d-none small py-2 mb-0"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                <button type="button" class="btn btn-primary" id="expSaveBtn" onclick="saveExpectation()">Kaydet</button>
             </div>
         </div>
     </div>
+
 </div>
+</main>
+
+<!-- Sağdan kayan panel -->
+<div class="panel-backdrop" id="panelBackdrop" onclick="closePanel()"></div>
+<aside class="slide-panel" id="expPanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" aria-hidden="true">
+    <div class="panel-head">
+        <h5 id="panelTitle">Yeni Beklenti</h5>
+        <button type="button" class="btn-close" onclick="closePanel()" aria-label="Kapat"></button>
+    </div>
+    <div class="panel-body">
+        <input type="hidden" id="expId">
+        <div class="mb-3">
+            <label class="form-label" for="expSender">Gönderen Bilgisi</label>
+            <input type="text" class="form-control" id="expSender"
+                   placeholder="Ad, soyad, email veya kurum adı (ör: Ahmet Yılmaz, firma.com)">
+            <div class="form-text">Tam email, domain, ad veya kurum adının bir kısmı olabilir.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="expKeywords">Anahtar Kelimeler</label>
+            <input type="text" class="form-control" id="expKeywords"
+                   placeholder="teklif, mülakat, başvuru (virgülle ayırın)">
+            <div class="form-text">Mail konusu ve içeriğinde aranacak kelimeler.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="expDescription">Açıklama <span class="text-muted fw-normal">(opsiyonel)</span></label>
+            <textarea class="form-control" id="expDescription" rows="3"
+                      placeholder="Bu beklentiyi kendi kendinize açıklayın"></textarea>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="suggestBtn" onclick="suggestKeywords()">
+                    🤖 Keyword Öner
+                </button>
+            </div>
+        </div>
+        <div id="suggestResult" class="d-none mb-3">
+            <div class="fw-semibold small mb-2">AI Önerileri <span class="text-muted fw-normal">(eklemek için tıklayın)</span></div>
+            <div id="suggestBadges" class="d-flex flex-wrap gap-2"></div>
+        </div>
+        <div id="expError" class="alert alert-danger d-none small py-2 mb-0"></div>
+    </div>
+    <div class="panel-foot">
+        <button type="button" class="btn btn-outline-secondary" onclick="closePanel()">İptal</button>
+        <button type="button" class="btn btn-primary px-4" id="expSaveBtn" onclick="saveExpectation()">Kaydet</button>
+    </div>
+</aside>
 
 <footer th:replace="~{fragments/footer :: footer}"></footer>
 <th:block th:replace="~{fragments/scripts :: scripts}"></th:block>
 
 <script>
-    // Her zaman aynı Bootstrap Modal instance'ını döndürür (yeni instance çakışmasını önler)
-    function getExpModal() {
-        return bootstrap.Modal.getOrCreateInstance(document.getElementById('expectationModal'));
+    const panelEl = document.getElementById('expPanel');
+
+    function openPanel() {
+        document.body.classList.add('panel-open');
+        panelEl.setAttribute('aria-hidden', 'false');
+        setTimeout(() => document.getElementById('expSender').focus(), 320);
     }
+
+    function closePanel() {
+        document.body.classList.remove('panel-open');
+        panelEl.setAttribute('aria-hidden', 'true');
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && document.body.classList.contains('panel-open')) closePanel();
+    });
 
     function resetForm() {
         document.getElementById('expId').value = '';
@@ -184,23 +180,23 @@
         document.getElementById('expSaveBtn').disabled = false;
     }
 
-    function openAddModal() {
+    function openAddPanel() {
         resetForm();
-        document.getElementById('modalTitle').textContent = 'Yeni Beklenti';
+        document.getElementById('panelTitle').textContent = 'Yeni Beklenti';
         document.getElementById('expSaveBtn').textContent = 'Kaydet';
-        getExpModal().show();
+        openPanel();
     }
 
     // btn: tıklanan buton — veriler data-* attribute'larından okunur (single quote sorunu olmaz)
-    function openEditModal(btn) {
+    function openEditPanel(btn) {
         resetForm();
-        document.getElementById('modalTitle').textContent = 'Beklenti Düzenle';
+        document.getElementById('panelTitle').textContent = 'Beklenti Düzenle';
         document.getElementById('expId').value = btn.dataset.expId || '';
         document.getElementById('expSender').value = btn.dataset.expSender || '';
         document.getElementById('expKeywords').value = btn.dataset.expKeywords || '';
         document.getElementById('expDescription').value = btn.dataset.expDescription || '';
         document.getElementById('expSaveBtn').textContent = 'Güncelle';
-        getExpModal().show();
+        openPanel();
     }
 
     function showFormError(msg) {
@@ -240,11 +236,8 @@
                 return;
             }
 
-            // Modal kapandıktan sonra yenile (animasyon bitimini bekle)
-            document.getElementById('expectationModal').addEventListener('hidden.bs.modal', () => {
-                window.location.reload();
-            }, { once: true });
-            getExpModal().hide();
+            closePanel();
+            setTimeout(() => window.location.reload(), 320);
 
         } catch (e) {
             showFormError('Bağlantı hatası. Lütfen tekrar deneyin.');
@@ -312,14 +305,14 @@
             if (keywords.length === 0) {
                 container.innerHTML = '<span class="text-muted small">Öneri bulunamadı.</span>';
             } else {
-                keywords.forEach(kw => {
-                    const badge = document.createElement('span');
-                    badge.className = 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25';
-                    badge.style.cursor = 'pointer';
-                    badge.textContent = kw;
-                    badge.title = 'Tıkla: anahtar kelimelere ekle';
-                    badge.onclick = () => addSuggestedKeyword(kw, badge);
-                    container.appendChild(badge);
+                keywords.forEach((kw, i) => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip chip-' + (i % 5);
+                    chip.textContent = kw;
+                    chip.title = 'Tıkla: anahtar kelimelere ekle';
+                    chip.onclick = () => addSuggestedKeyword(kw, chip);
+                    container.appendChild(chip);
                 });
             }
             document.getElementById('suggestResult').classList.remove('d-none');
@@ -331,14 +324,14 @@
         }
     }
 
-    function addSuggestedKeyword(kw, badge) {
+    function addSuggestedKeyword(kw, chip) {
         const field = document.getElementById('expKeywords');
         const existing = field.value.split(',').map(k => k.trim()).filter(k => k);
         if (!existing.includes(kw)) {
             field.value = existing.length ? existing.join(', ') + ', ' + kw : kw;
         }
-        badge.classList.remove('bg-primary', 'text-primary', 'border-primary');
-        badge.classList.add('bg-success', 'text-success', 'border-success');
+        chip.className = 'chip chip-2';
+        chip.textContent = '✓ ' + kw;
     }
 </script>
 </body>

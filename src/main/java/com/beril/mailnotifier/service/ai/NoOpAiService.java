@@ -5,7 +5,7 @@ import java.util.List;
 public class NoOpAiService implements AiService {
 
     @Override
-    public AiAnalysisResult analyzeEmail(String from, String subject, String content) {
+    public AiAnalysisResult analyzeEmail(String from, String subject, String content, ExpectationContext expectation) {
         return AiAnalysisResult.empty();
     }
 

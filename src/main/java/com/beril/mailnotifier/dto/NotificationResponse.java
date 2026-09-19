@@ -11,6 +11,7 @@ public record NotificationResponse(
         ConfidenceLevel confidenceLevel,
         String expectationDescription,
         String mailFrom,
+        String mailFromEmail,
         String mailSubject,
         double matchScore,
         boolean isRead,

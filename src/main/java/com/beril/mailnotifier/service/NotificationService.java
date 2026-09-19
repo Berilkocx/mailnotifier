@@ -101,6 +101,7 @@ public class NotificationService {
                 n.getConfidenceLevel(),
                 match.getExpectation().getDescription(),
                 match.getFromAddress(),
+                match.getFromEmail(),
                 match.getSubject(),
                 match.getMatchScore() != null ? match.getMatchScore() : 0.0,
                 Boolean.TRUE.equals(n.getIsRead()),

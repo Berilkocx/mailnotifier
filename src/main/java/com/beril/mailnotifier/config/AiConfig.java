@@ -22,7 +22,7 @@ public class AiConfig {
             ObjectMapper objectMapper) {
 
         if (apiKey == null || apiKey.isBlank()) {
-            log.info("AI_API_KEY tanımlı değil — AI devre dışı, string matching aktif");
+            log.info("AI_API_KEY tanımlı değil — AI analizi devre dışı, yerel NLP ile devam ediliyor");
             return new NoOpAiService();
         }
 

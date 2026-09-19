@@ -1,22 +1,40 @@
 /* MailNotifier — Ortak JavaScript */
 
-// ── Badge ──────────────────────────────────────────────────────────────────
+// ── Badge & Zil ────────────────────────────────────────────────────────────
 function updateBadge(count) {
-    const badge = document.getElementById('notification-badge');
-    if (!badge) return;
-    if (count > 0) {
-        badge.textContent = count > 99 ? '99+' : count;
-        badge.classList.remove('d-none');
-    } else {
-        badge.classList.add('d-none');
-    }
+    document.querySelectorAll('.js-notif-badge').forEach(badge => {
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('d-none');
+        } else {
+            badge.classList.add('d-none');
+        }
+    });
+}
+
+function currentBadgeCount() {
+    const badge = document.querySelector('.js-notif-badge');
+    return badge ? (parseInt(badge.textContent) || 0) : 0;
 }
 
 function incrementBadge() {
-    const badge = document.getElementById('notification-badge');
-    if (!badge) return;
-    const current = parseInt(badge.textContent) || 0;
-    updateBadge(current + 1);
+    updateBadge(currentBadgeCount() + 1);
+    document.querySelectorAll('.js-notif-badge').forEach(badge => {
+        badge.classList.remove('pop');
+        void badge.offsetWidth;
+        badge.classList.add('pop');
+    });
+    ringBell();
+}
+
+// Yeni bildirim gelince zil sallanır
+function ringBell() {
+    document.querySelectorAll('.js-bell').forEach(bell => {
+        bell.classList.remove('bell-ring');
+        void bell.offsetWidth;
+        bell.classList.add('bell-ring');
+        bell.addEventListener('animationend', () => bell.classList.remove('bell-ring'), { once: true });
+    });
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
@@ -25,31 +43,33 @@ function showToast(message) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'mn-toast-container';
-        container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:380px;';
+        container.style.cssText = 'position:fixed;top:84px;right:20px;z-index:1100;display:flex;flex-direction:column;gap:10px;max-width:380px;';
         document.body.appendChild(container);
     }
     const item = document.createElement('div');
-    item.style.cssText = 'background:white;border-radius:10px;border-left:4px solid #0d6efd;box-shadow:0 4px 20px rgba(0,0,0,.15);padding:14px 16px;font-size:14px;color:#374151;line-height:1.5;animation:mnSlideIn .3s ease;cursor:pointer;display:flex;align-items:flex-start;gap:10px;';
-    item.innerHTML =
-        '<span style="font-size:18px;flex-shrink:0">📬</span>' +
-        '<div style="flex:1">' + message + '</div>' +
-        '<button style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:18px;padding:0;line-height:1" onclick="this.parentElement.remove()">×</button>';
+    item.className = 'mn-toast';
+
+    const icon = document.createElement('span');
+    icon.style.cssText = 'font-size:18px;flex-shrink:0';
+    icon.textContent = '📬';
+
+    // Mesaj mail içeriğinden türeyebildiği için HTML olarak değil, düz metin olarak basılır
+    const text = document.createElement('div');
+    text.style.flex = '1';
+    text.textContent = message;
+
+    const close = document.createElement('button');
+    close.textContent = '×';
+    close.addEventListener('click', () => item.remove());
+
+    item.append(icon, text, close);
     container.prepend(item);
     const timer = setTimeout(() => {
         item.style.animation = 'mnFadeOut .3s ease forwards';
         setTimeout(() => item.remove(), 300);
-    }, 5000);
-    item.querySelector('button').addEventListener('click', () => clearTimeout(timer));
+    }, 6000);
+    close.addEventListener('click', () => clearTimeout(timer));
 }
-
-// CSS animasyonları (inject once)
-(function injectToastStyles() {
-    if (document.getElementById('mn-toast-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'mn-toast-styles';
-    style.textContent = '@keyframes mnSlideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}@keyframes mnFadeOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}';
-    document.head.appendChild(style);
-})();
 
 // ── Tarayıcı Bildirimi ─────────────────────────────────────────────────────
 function requestBrowserPermission() {
@@ -100,8 +120,8 @@ function relativeTime(dateStr) {
     if (isNaN(date.getTime())) return dateStr;
     const diff = Math.floor((Date.now() - date.getTime()) / 1000);
     if (diff < 60)       return 'Az önce';
-    if (diff < 3600)     return Math.floor(diff / 60) + ' dakika önce';
-    if (diff < 86400)    return Math.floor(diff / 3600) + ' saat önce';
+    if (diff < 3600)     return Math.floor(diff / 60) + ' dk önce';
+    if (diff < 86400)    return Math.floor(diff / 3600) + ' sa önce';
     const days = Math.floor(diff / 86400);
     if (days === 1)      return 'Dün';
     if (days < 7)        return days + ' gün önce';
@@ -121,9 +141,9 @@ function applyRelativeTimes() {
 
 // ── Confidence Badge Sınıfı ────────────────────────────────────────────────
 function confidenceBadgeClass(level) {
-    if (level === 'HIGH')   return 'badge bg-success';
-    if (level === 'MEDIUM') return 'badge bg-warning text-dark';
-    return 'badge bg-secondary';
+    if (level === 'HIGH')   return 'badge badge-high';
+    if (level === 'MEDIUM') return 'badge badge-medium';
+    return 'badge badge-low';
 }
 
 function confidenceLabel(level) {

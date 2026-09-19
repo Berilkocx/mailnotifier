@@ -5,72 +5,74 @@
 
 <nav th:replace="~{fragments/navbar :: navbar}"></nav>
 
-<main class="container-fluid px-4 py-4 flex-grow-1">
+<main class="container-fluid px-3 px-lg-4 py-4 flex-grow-1">
+<div class="page-shell">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header">
         <div>
-            <h4 class="mb-1 fw-bold">Bildirimler</h4>
-            <p class="text-muted small mb-0">Tüm mail eşleşme bildirimleriniz.</p>
+            <h1 class="page-title">Bildirimler</h1>
+            <p class="page-sub">Tüm mail eşleşme bildirimleriniz.</p>
         </div>
-        <button class="btn btn-outline-secondary btn-sm" onclick="markAllRead()" th:if="${unreadCount > 0}">
+        <button id="markAllBtn" class="btn btn-outline-secondary" onclick="markAllRead()" th:if="${unreadCount > 0}">
             <i class="bi bi-check2-all me-1"></i>Tümünü Okundu Yap
         </button>
     </div>
 
     <!-- Boş durum -->
-    <div th:if="${#lists.isEmpty(notifications)}" class="card border-0 shadow-sm">
+    <div th:if="${#lists.isEmpty(notifications)}" class="card">
         <div class="empty-state">
-            <div class="empty-icon">🔕</div>
-            <p class="fw-semibold mb-1">Henüz bildirim yok.</p>
-            <p class="text-muted small">Bir beklentiyle eşleşen mail geldiğinde burada görünecek.</p>
+            <div class="empty-emoji">🔕</div>
+            <h5>Henüz bildirim yok</h5>
+            <p class="text-muted mb-0">Bir beklentiyle eşleşen mail geldiğinde burada görünecek.</p>
         </div>
     </div>
 
     <!-- Bildirim Listesi -->
-    <div class="card border-0 shadow-sm" th:unless="${#lists.isEmpty(notifications)}">
-        <ul class="list-group list-group-flush">
+    <div class="card" th:unless="${#lists.isEmpty(notifications)}">
+        <ul class="notif-list">
             <li th:each="n : ${notifications}"
                 th:id="${'notif-' + n.id}"
-                th:class="${'list-group-item px-4 py-3 ' + (!n.isRead ? 'unread-notification' : '')}">
-                <div class="d-flex justify-content-between align-items-start gap-3">
+                th:class="${'notif-item ' + (!n.isRead ? 'is-unread' : '')}">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap flex-sm-nowrap">
                     <div class="flex-grow-1 min-w-0">
-                        <!-- Confidence badge + message -->
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="unread-dot"></span>
                             <span th:class="${'badge ' + (n.confidenceLevel.name() == 'HIGH' ? 'badge-high' : (n.confidenceLevel.name() == 'MEDIUM' ? 'badge-medium' : 'badge-low'))}"
                                   th:text="${n.confidenceLevel.name() == 'HIGH' ? 'Yüksek' : (n.confidenceLevel.name() == 'MEDIUM' ? 'Orta' : 'Düşük')}">Orta</span>
-                            <span th:class="${'fw-semibold small ' + (!n.isRead ? '' : 'text-muted')}"
-                                  th:text="${n.message}">Mesaj</span>
+                            <span class="notif-msg" th:text="${n.message}">Mesaj</span>
                         </div>
-                        <!-- Mail info -->
-                        <div class="text-muted small">
-                            <span th:if="${n.mailFrom}">
-                                <i class="bi bi-person me-1"></i><span th:text="${n.mailFrom}">Gönderen</span>
-                                <span class="mx-1">·</span>
+                        <div class="notif-meta text-break">
+                            <span th:if="${n.mailFrom != null or n.mailFromEmail != null}">
+                                <i class="bi bi-person me-1"></i><span class="fw-semibold" th:text="${n.mailFrom ?: n.mailFromEmail}">Gönderen</span>
+                                <span th:if="${n.mailFromEmail != null and n.mailFromEmail != n.mailFrom}" class="sender-email" th:text="${'&lt;' + n.mailFromEmail + '&gt;'}">&lt;mail&gt;</span>
                             </span>
+                            <span th:if="${(n.mailFrom != null or n.mailFromEmail != null) and n.mailSubject != null}" class="mx-1">·</span>
                             <span th:if="${n.mailSubject}">
                                 <i class="bi bi-envelope me-1"></i><span th:text="${n.mailSubject}">Konu</span>
                             </span>
                         </div>
-                        <!-- Expectation -->
-                        <div th:if="${n.expectationDescription}" class="text-muted small mt-1">
+                        <div th:if="${n.expectationDescription}" class="notif-meta mt-1">
                             <i class="bi bi-link-45deg"></i>
                             <span th:text="${n.expectationDescription}">Beklenti</span>
                         </div>
                     </div>
-                    <!-- Time + actions -->
-                    <div class="flex-shrink-0 text-end">
-                        <div class="text-muted small mb-2"
-                             th:attr="data-time=${n.createdAt}">tarih</div>
-                        <div class="d-flex gap-1 justify-content-end">
+
+                    <div class="d-flex flex-sm-column align-items-center align-items-sm-end justify-content-between gap-2 flex-shrink-0">
+                        <div class="text-sm-end">
+                            <div class="notif-rel" th:attr="data-time=${n.createdAt}"></div>
+                            <div class="notif-abs"
+                                 th:text="${n.createdAt != null ? #temporals.format(n.createdAt, 'dd.MM.yyyy HH:mm') : '—'}">tarih</div>
+                        </div>
+                        <div class="notif-actions d-flex gap-1">
                             <button th:if="${!n.isRead}"
-                                    class="btn btn-sm btn-outline-secondary"
-                                    th:onclick="|markRead('${n.id}')|"
-                                    title="Okundu yap">
+                                    class="btn btn-sm btn-outline-secondary btn-icon btn-mark-read"
+                                    th:data-id="${n.id}" onclick="markRead(this.dataset.id)"
+                                    title="Okundu yap" aria-label="Okundu yap">
                                 <i class="bi bi-check2"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger"
-                                    th:onclick="|deleteNotification('${n.id}')|"
-                                    title="Sil">
+                            <button class="btn btn-sm btn-outline-danger btn-icon"
+                                    th:data-id="${n.id}" onclick="deleteNotification(this.dataset.id)"
+                                    title="Sil" aria-label="Sil">
                                 <i class="bi bi-trash3"></i>
                             </button>
                         </div>
@@ -79,38 +81,50 @@
             </li>
         </ul>
     </div>
-</main>
 
-<style>
-    .unread-notification { background: #f0f7ff; border-left: 3px solid #0d6efd; }
-</style>
+</div>
+</main>
 
 <footer th:replace="~{fragments/footer :: footer}"></footer>
 <th:block th:replace="~{fragments/scripts :: scripts}"></th:block>
 
 <script>
+    function markReadInDom(el) {
+        el.classList.remove('is-unread');
+        const btn = el.querySelector('.btn-mark-read');
+        if (btn) {
+            btn.style.transition = 'opacity .25s ease, transform .25s ease';
+            btn.style.opacity = '0';
+            btn.style.transform = 'scale(.6)';
+            setTimeout(() => btn.remove(), 260);
+        }
+    }
+
     async function markRead(id) {
-        await apiCall('/api/notifications/' + id + '/read', { method: 'PUT' });
         const el = document.getElementById('notif-' + id);
-        if (el) {
-            el.classList.remove('unread-notification');
-            el.querySelector('button[onclick*="markRead"]')?.remove();
-        }
-        const badge = document.getElementById('notification-badge');
-        if (badge) {
-            const c = Math.max(0, (parseInt(badge.textContent) || 0) - 1);
-            updateBadge(c);
-        }
+        const wasUnread = el && el.classList.contains('is-unread');
+        await apiCall('/api/notifications/' + id + '/read', { method: 'PUT' });
+        if (el) markReadInDom(el);
+        if (wasUnread) updateBadge(Math.max(0, currentBadgeCount() - 1));
+        if (currentBadgeCount() === 0) document.getElementById('markAllBtn')?.remove();
     }
 
     async function markAllRead() {
         await apiCall('/api/notifications/read-all', { method: 'PUT' });
-        window.location.reload();
+        document.querySelectorAll('.notif-item.is-unread').forEach(markReadInDom);
+        updateBadge(0);
+        document.getElementById('markAllBtn')?.remove();
     }
 
     async function deleteNotification(id) {
+        const el = document.getElementById('notif-' + id);
+        const wasUnread = el && el.classList.contains('is-unread');
         await apiCall('/api/notifications/' + id, { method: 'DELETE' });
-        document.getElementById('notif-' + id)?.remove();
+        if (wasUnread) updateBadge(Math.max(0, currentBadgeCount() - 1));
+        if (el) {
+            el.classList.add('removing');
+            setTimeout(() => el.remove(), 350);
+        }
     }
 </script>
 </body>

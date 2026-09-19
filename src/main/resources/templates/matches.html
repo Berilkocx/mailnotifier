@@ -5,156 +5,144 @@
 
 <nav th:replace="~{fragments/navbar :: navbar}"></nav>
 
-<main class="container-fluid px-4 py-4 flex-grow-1">
+<main class="container-fluid px-3 px-lg-4 py-4 flex-grow-1">
+<div class="page-shell">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header">
         <div>
-            <h4 class="mb-1 fw-bold">Eşleşmeler</h4>
-            <p class="text-muted small mb-0">Gmail'den bulunan ve beklentilerinizle eşleşen mailler.</p>
+            <h1 class="page-title">Eşleşmeler</h1>
+            <p class="page-sub">Gmail'den bulunan ve beklentilerinizle eşleşen mailler.</p>
         </div>
     </div>
 
     <!-- Filtreler -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body py-3">
-            <form method="get" action="/matches" class="row g-2 align-items-end">
-                <!-- Confidence -->
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold mb-1">Güven Seviyesi</label>
-                    <div class="btn-group w-100" role="group">
-                        <a th:href="@{/matches(period=${selectedPeriod},expectationId=${selectedExpectation})}"
-                           th:class="${'btn btn-sm ' + (selectedConfidence == null ? 'btn-primary' : 'btn-outline-primary')}">Tümü</a>
-                        <a th:href="@{/matches(confidence='HIGH',period=${selectedPeriod},expectationId=${selectedExpectation})}"
-                           th:class="${'btn btn-sm ' + (selectedConfidence == 'HIGH' ? 'btn-success' : 'btn-outline-success')}">Yüksek</a>
-                        <a th:href="@{/matches(confidence='MEDIUM',period=${selectedPeriod},expectationId=${selectedExpectation})}"
-                           th:class="${'btn btn-sm ' + (selectedConfidence == 'MEDIUM' ? 'btn-warning text-dark' : 'btn-outline-warning')}">Orta</a>
-                        <a th:href="@{/matches(confidence='LOW',period=${selectedPeriod},expectationId=${selectedExpectation})}"
-                           th:class="${'btn btn-sm ' + (selectedConfidence == 'LOW' ? 'btn-secondary' : 'btn-outline-secondary')}">Düşük</a>
-                    </div>
+    <div class="card filter-bar mb-4">
+        <form method="get" action="/matches" class="row g-3 align-items-end">
+            <div class="col-12 col-lg-auto">
+                <span class="filter-label">Güven Seviyesi</span>
+                <div class="pills">
+                    <a th:href="@{/matches(period=${selectedPeriod},expectationId=${selectedExpectation})}"
+                       th:class="${'pill ' + (selectedConfidence == null ? 'active' : '')}">Tümü</a>
+                    <a th:href="@{/matches(confidence='HIGH',period=${selectedPeriod},expectationId=${selectedExpectation})}"
+                       th:class="${'pill p-high ' + (selectedConfidence == 'HIGH' ? 'active' : '')}">Yüksek</a>
+                    <a th:href="@{/matches(confidence='MEDIUM',period=${selectedPeriod},expectationId=${selectedExpectation})}"
+                       th:class="${'pill p-medium ' + (selectedConfidence == 'MEDIUM' ? 'active' : '')}">Orta</a>
+                    <a th:href="@{/matches(confidence='LOW',period=${selectedPeriod},expectationId=${selectedExpectation})}"
+                       th:class="${'pill p-low ' + (selectedConfidence == 'LOW' ? 'active' : '')}">Düşük</a>
                 </div>
+            </div>
 
-                <!-- Beklenti -->
-                <div class="col-md-4">
-                    <label class="form-label small fw-semibold mb-1">Beklenti</label>
-                    <select name="expectationId" class="form-select form-select-sm"
-                            onchange="this.form.submit()">
-                        <option value="" th:selected="${selectedExpectation == null or selectedExpectation == ''}">Tüm Beklentiler</option>
-                        <option th:each="exp : ${expectations}"
-                                th:value="${exp.id}"
-                                th:selected="${exp.id.toString() == selectedExpectation}"
-                                th:text="${exp.senderIdentifier ?: exp.description ?: exp.id.toString().substring(0,8)}">Beklenti</option>
-                    </select>
-                    <input type="hidden" name="confidence" th:value="${selectedConfidence}">
-                    <input type="hidden" name="period" th:value="${selectedPeriod}">
-                </div>
+            <div class="col-12 col-md-6 col-lg">
+                <label class="filter-label" for="expectationSelect">Beklenti</label>
+                <select id="expectationSelect" name="expectationId" class="form-select" onchange="this.form.submit()">
+                    <option value="" th:selected="${selectedExpectation == null or selectedExpectation == ''}">Tüm Beklentiler</option>
+                    <option th:each="exp : ${expectations}"
+                            th:value="${exp.id}"
+                            th:selected="${exp.id.toString() == selectedExpectation}"
+                            th:text="${exp.senderIdentifier ?: exp.description ?: exp.id.toString().substring(0,8)}">Beklenti</option>
+                </select>
+                <input type="hidden" name="confidence" th:value="${selectedConfidence}">
+                <input type="hidden" name="period" th:value="${selectedPeriod}">
+            </div>
 
-                <!-- Tarih aralığı -->
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold mb-1">Dönem</label>
-                    <div class="btn-group w-100" role="group">
-                        <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='all')}"
-                           th:class="${'btn btn-sm ' + (selectedPeriod == 'all' ? 'btn-dark' : 'btn-outline-dark')}">Tümü</a>
-                        <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='today')}"
-                           th:class="${'btn btn-sm ' + (selectedPeriod == 'today' ? 'btn-dark' : 'btn-outline-dark')}">Bugün</a>
-                        <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='7d')}"
-                           th:class="${'btn btn-sm ' + (selectedPeriod == '7d' ? 'btn-dark' : 'btn-outline-dark')}">7 Gün</a>
-                        <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='30d')}"
-                           th:class="${'btn btn-sm ' + (selectedPeriod == '30d' ? 'btn-dark' : 'btn-outline-dark')}">30 Gün</a>
-                    </div>
+            <div class="col-12 col-lg-auto">
+                <span class="filter-label">Dönem</span>
+                <div class="pills">
+                    <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='all')}"
+                       th:class="${'pill ' + (selectedPeriod == 'all' ? 'active' : '')}">Tümü</a>
+                    <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='today')}"
+                       th:class="${'pill ' + (selectedPeriod == 'today' ? 'active' : '')}">Bugün</a>
+                    <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='7d')}"
+                       th:class="${'pill ' + (selectedPeriod == '7d' ? 'active' : '')}">7 Gün</a>
+                    <a th:href="@{/matches(confidence=${selectedConfidence},expectationId=${selectedExpectation},period='30d')}"
+                       th:class="${'pill ' + (selectedPeriod == '30d' ? 'active' : '')}">30 Gün</a>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 
     <!-- Boş durum -->
-    <div th:if="${#lists.isEmpty(matches)}" class="card border-0 shadow-sm">
+    <div th:if="${#lists.isEmpty(matches)}" class="card">
         <div class="empty-state">
-            <div class="empty-icon">📭</div>
-            <p class="fw-semibold mb-1">Henüz eşleşme bulunamadı.</p>
-            <p class="text-muted small">Yeni bir beklenti ekleyerek başlayın!</p>
-            <a href="/expectations" class="btn btn-sm btn-primary mt-2">
+            <div class="empty-emoji">📭</div>
+            <h5>Henüz eşleşme bulunamadı</h5>
+            <p class="text-muted">Yeni bir beklenti ekleyerek başlayın!</p>
+            <a href="/expectations" class="btn btn-primary mt-1">
                 <i class="bi bi-plus-lg me-1"></i>Beklenti Ekle
             </a>
         </div>
     </div>
 
     <!-- Eşleşme Kartları -->
-    <div class="row g-3" th:unless="${#lists.isEmpty(matches)}">
-        <div class="col-12" th:each="m : ${matches}" th:id="${'match-' + m.id}">
-            <div class="card border-0 shadow-sm">
+    <div class="d-flex flex-column gap-3 gap-lg-4" th:unless="${#lists.isEmpty(matches)}">
+        <div th:each="m : ${matches}" th:id="${'match-' + m.id}" class="match-wrap">
+            <div th:class="${'card match-card card-hover ' + (m.confidenceLevel.name() == 'HIGH' ? 'm-high' : (m.confidenceLevel.name() == 'MEDIUM' ? 'm-medium' : 'm-low'))}">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap flex-sm-nowrap">
                         <div class="flex-grow-1 min-w-0">
-                            <!-- Header: From + Subject -->
                             <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                                 <span th:class="${'badge ' + (m.confidenceLevel.name() == 'HIGH' ? 'badge-high' : (m.confidenceLevel.name() == 'MEDIUM' ? 'badge-medium' : 'badge-low'))}"
                                       th:text="${m.confidenceLevel.name() == 'HIGH' ? '🎯 Yüksek Eşleşme' : (m.confidenceLevel.name() == 'MEDIUM' ? '📩 Olası Eşleşme' : '💡 Düşük Eşleşme')}">Eşleşme</span>
-                                <span class="text-muted small"
-                                      th:text="${m.receivedAt != null ? #temporals.format(m.receivedAt, 'dd.MM.yyyy HH:mm') : '—'}">Tarih</span>
+                                <span class="text-muted small"><i class="bi bi-clock me-1"></i><span
+                                      th:text="${m.receivedAt != null ? #temporals.format(m.receivedAt, 'dd.MM.yyyy HH:mm') : '—'}">Tarih</span></span>
                             </div>
 
-                            <div class="fw-semibold" th:text="${m.fromAddress ?: m.fromEmail ?: '—'}">Gönderen</div>
-                            <div class="text-muted small mb-2" th:text="${m.subject ?: '(konu yok)'}">Konu</div>
+                            <div class="match-from text-break" th:text="${m.fromAddress ?: m.fromEmail ?: '—'}">Gönderen</div>
+                            <div class="match-email text-break" th:if="${m.fromEmail != null and m.fromEmail != m.fromAddress}">
+                                <i class="bi bi-at"></i><span th:text="${m.fromEmail}">mail@adres.com</span>
+                            </div>
+                            <div class="match-subject text-break mb-3" th:text="${m.subject ?: '(konu yok)'}">Konu</div>
 
-                            <!-- Snippet -->
-                            <div th:if="${m.snippet}" class="bg-light rounded p-2 small mb-2 text-muted"
+                            <div th:if="${m.snippet}" class="snippet mb-2"
                                  th:text="${#strings.abbreviate(m.snippet, 200)}">İçerik</div>
 
-                            <!-- Match Summary -->
-                            <div th:if="${m.matchSummary}" class="alert alert-info py-1 px-2 mb-2 small">
+                            <div th:if="${m.matchSummary}" class="match-note mb-2">
                                 <i class="bi bi-info-circle me-1"></i>
                                 <span th:text="${m.matchSummary}">Özet</span>
                             </div>
 
                             <!-- AI Analizi -->
-                            <div th:if="${m.contentSummary != null or m.detectedIntent != null}" class="border rounded p-2 mb-2 small bg-white">
-                                <div class="fw-semibold text-secondary mb-1"><i class="bi bi-robot me-1"></i>AI Analizi</div>
-                                <!-- Intent badge -->
-                                <div th:if="${m.detectedIntent != null}" class="mb-1">
-                                    <span th:class="${'badge ' +
-                                        (m.detectedIntent == 'TEKLIF' ? 'bg-primary' :
-                                        (m.detectedIntent == 'ONAY' ? 'bg-success' :
-                                        (m.detectedIntent == 'RET' ? 'bg-danger' :
-                                        (m.detectedIntent == 'BASVURU_CEVABI' ? 'bg-warning text-dark' : 'bg-secondary'))))}"
+                            <div th:if="${m.contentSummary != null or m.detectedIntent != null}" class="ai-card">
+                                <div class="ai-title">
+                                    <span class="ai-emoji">🤖</span>AI Analizi
+                                    <span th:if="${m.detectedIntent != null}"
+                                          th:class="${'badge ms-1 ' +
+                                            (m.detectedIntent == 'TEKLIF' ? 'bg-primary' :
+                                            (m.detectedIntent == 'ONAY' ? 'bg-success' :
+                                            (m.detectedIntent == 'RET' ? 'bg-danger' :
+                                            (m.detectedIntent == 'BASVURU_CEVABI' ? 'bg-warning text-dark' : 'bg-secondary'))))}"
                                           th:text="${m.detectedIntent == 'TEKLIF' ? 'Teklif' :
                                               (m.detectedIntent == 'ONAY' ? 'Onay' :
                                               (m.detectedIntent == 'RET' ? 'Red' :
                                               (m.detectedIntent == 'BASVURU_CEVABI' ? 'Başvuru Cevabı' : 'Genel')))}">Intent</span>
                                 </div>
-                                <!-- Content Summary -->
-                                <div th:if="${m.contentSummary}" class="text-muted" th:text="${m.contentSummary}">Özet</div>
-                                <!-- AI Topics -->
-                                <div th:if="${m.aiTopics != null and !#lists.isEmpty(m.aiTopics)}" class="d-flex flex-wrap gap-1 mt-1">
-                                    <span th:each="topic : ${m.aiTopics}"
-                                          class="badge bg-light text-secondary border"
-                                          th:text="${topic}">konu</span>
+                                <div th:if="${m.contentSummary}" class="ai-text" th:text="${m.contentSummary}">Özet</div>
+                                <div th:if="${m.aiTopics != null and !#lists.isEmpty(m.aiTopics)}" class="d-flex flex-wrap gap-2 mt-2">
+                                    <span th:each="topic : ${m.aiTopics}" class="chip chip-muted" th:text="${topic}">konu</span>
                                 </div>
                             </div>
 
-                            <!-- Matched Keywords -->
-                            <div th:if="${!#lists.isEmpty(m.matchedKeywords)}" class="d-flex flex-wrap gap-1 mb-2">
-                                <span class="text-muted small me-1">Eşleşen kelimeler:</span>
-                                <span th:each="kw : ${m.matchedKeywords}"
-                                      class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"
-                                      th:text="${kw}">kelime</span>
+                            <div th:if="${!#lists.isEmpty(m.matchedKeywords)}" class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <span class="text-muted small">Eşleşen kelimeler:</span>
+                                <span th:each="kw, s : ${m.matchedKeywords}" th:class="${'chip chip-' + (s.index % 5)}" th:text="${kw}">kelime</span>
                             </div>
 
-                            <!-- Expectation & Score -->
-                            <div class="d-flex align-items-center gap-3 mt-1">
+                            <div class="d-flex align-items-center gap-3 mt-2 flex-wrap">
                                 <span class="text-muted small">
                                     <i class="bi bi-link-45deg"></i>
                                     <span th:text="${m.expectationDescription ?: 'Beklenti'}">Beklenti</span>
                                 </span>
-                                <span class="text-muted small">
-                                    Skor: <strong th:text="${#numbers.formatPercent(m.matchScore, 0, 0)}">0%</strong>
+                                <span class="d-flex align-items-center gap-2 small text-muted">
+                                    Skor
+                                    <span class="score-bar"><span th:style="${'width:' + #numbers.formatInteger(m.matchScore * 100, 1) + '%'}"></span></span>
+                                    <strong class="text-body" th:text="${#numbers.formatPercent(m.matchScore, 0, 0)}">0%</strong>
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Actions -->
                         <div class="flex-shrink-0">
                             <button class="btn btn-sm btn-outline-danger"
-                                    th:onclick="|dismissMatch('${m.id}')|"
+                                    th:data-id="${m.id}" onclick="dismissMatch(this.dataset.id)"
                                     title="Bu değildi — eşleşmeyi sil">
                                 <i class="bi bi-x-circle me-1"></i>Bu değildi
                             </button>
@@ -164,6 +152,8 @@
             </div>
         </div>
     </div>
+
+</div>
 </main>
 
 <footer th:replace="~{fragments/footer :: footer}"></footer>
@@ -174,7 +164,12 @@
         if (!confirm('Bu eşleşmeyi silmek istediğinizden emin misiniz?')) return;
         await apiCall('/api/matches/' + id, { method: 'DELETE' });
         const el = document.getElementById('match-' + id);
-        if (el) el.remove();
+        if (el) {
+            el.style.transition = 'opacity .3s ease, transform .3s ease';
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(24px)';
+            setTimeout(() => el.remove(), 300);
+        }
     }
 </script>
 </body>
