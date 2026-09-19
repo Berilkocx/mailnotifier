@@ -19,6 +19,9 @@ server:
   port: 8080
 
 mailnotifier:
+  security:
+    # Sadece dev ortamı için sabit anahtar — prod'da mutlaka TOKEN_ENCRYPTION_KEY env değişkeni set edilmeli
+    token-encryption-key: ${TOKEN_ENCRYPTION_KEY:h7mrcFpa2+hBP7VOSPz9kExI9O4aA0ng9QBVmGkWcXU=}
   scan:
     interval: 5000  # dev ortamında 5 sn
   matching:

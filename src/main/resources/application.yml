@@ -28,6 +28,8 @@ spring:
             user-name-attribute: sub
 
 mailnotifier:
+  security:
+    token-encryption-key: ${TOKEN_ENCRYPTION_KEY}  # Base64, 32 byte (256-bit) AES anahtarı
   scan:
     enabled: true
     interval: 60000  # ms (1 dakika)

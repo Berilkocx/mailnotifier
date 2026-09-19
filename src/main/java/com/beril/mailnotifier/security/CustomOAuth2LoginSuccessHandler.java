@@ -2,7 +2,6 @@ package com.beril.mailnotifier.security;
 
 import com.beril.mailnotifier.domain.entity.AuthProvider;
 import com.beril.mailnotifier.service.UserService;
-import com.beril.mailnotifier.util.TokenEncryptionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,7 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
 
     private final UserService userService;
     private final OAuth2AuthorizedClientService authorizedClientService;
+    private final TokenEncryptionService tokenEncryptionService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -47,12 +47,12 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
                 oauthToken.getName()
         );
 
-        String encodedAccess = TokenEncryptionUtil.encode(client.getAccessToken().getTokenValue());
+        String encodedAccess = tokenEncryptionService.encrypt(client.getAccessToken().getTokenValue());
         Instant expiresAt = client.getAccessToken().getExpiresAt();
 
         String encodedRefresh = null;
         if (client.getRefreshToken() != null) {
-            encodedRefresh = TokenEncryptionUtil.encode(client.getRefreshToken().getTokenValue());
+            encodedRefresh = tokenEncryptionService.encrypt(client.getRefreshToken().getTokenValue());
         } else {
             log.warn("Refresh token gelmedi — email={}", email);
         }

@@ -3,7 +3,7 @@ package com.beril.mailnotifier.mail.gmail;
 import com.beril.mailnotifier.domain.entity.User;
 import com.beril.mailnotifier.domain.repository.UserRepository;
 import com.beril.mailnotifier.exception.GmailApiException;
-import com.beril.mailnotifier.util.TokenEncryptionUtil;
+import com.beril.mailnotifier.security.TokenEncryptionService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -29,6 +29,7 @@ public class TokenRefreshService {
     private String clientSecret;
 
     private final UserRepository userRepository;
+    private final TokenEncryptionService tokenEncryptionService;
 
     /**
      * Geçerli access token döner; süresi dolmuşsa refresh token ile yeniler.
@@ -37,7 +38,7 @@ public class TokenRefreshService {
         // 60 saniyelik tolerans: token yakında dolacaksa şimdiden yenile
         if (user.getTokenExpiresAt() != null &&
                 Instant.now().isBefore(user.getTokenExpiresAt().minusSeconds(60))) {
-            return TokenEncryptionUtil.decode(user.getAccessToken());
+            return tokenEncryptionService.decrypt(user.getAccessToken());
         }
         return refresh(user);
     }
@@ -49,7 +50,7 @@ public class TokenRefreshService {
         }
 
         try {
-            String decodedRefresh = TokenEncryptionUtil.decode(user.getRefreshToken());
+            String decodedRefresh = tokenEncryptionService.decrypt(user.getRefreshToken());
             GoogleTokenResponse response = new GoogleRefreshTokenRequest(
                     new NetHttpTransport(),
                     GsonFactory.getDefaultInstance(),
@@ -61,7 +62,7 @@ public class TokenRefreshService {
             String newAccessToken = response.getAccessToken();
             Instant newExpiresAt = Instant.now().plusSeconds(response.getExpiresInSeconds());
 
-            user.setAccessToken(TokenEncryptionUtil.encode(newAccessToken));
+            user.setAccessToken(tokenEncryptionService.encrypt(newAccessToken));
             user.setTokenExpiresAt(newExpiresAt);
             userRepository.save(user);
 
